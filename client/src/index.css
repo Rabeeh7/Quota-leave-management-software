@@ -1,0 +1,148 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background-color: #0A0A0A;
+    color: #FFFFFF;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+  }
+
+  input, select, textarea {
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #111111;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #333333;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555555;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card border border-border-subtle rounded-2xl shadow-card backdrop-blur-sm;
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300 hover:border-accent/20 hover:shadow-glow-sm;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-r from-accent to-accent-light text-white font-semibold 
+           px-6 py-3 rounded-xl transition-all duration-300 
+           hover:shadow-glow hover:scale-[1.02] active:scale-[0.98]
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100;
+  }
+
+  .btn-secondary {
+    @apply bg-transparent border border-border-light text-white font-medium 
+           px-6 py-3 rounded-xl transition-all duration-300 
+           hover:bg-white/5 hover:border-white/20 active:scale-[0.98];
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-text-secondary font-medium 
+           px-4 py-2 rounded-lg transition-all duration-200 
+           hover:bg-white/5 hover:text-white;
+  }
+
+  .btn-danger {
+    @apply bg-danger/10 border border-danger/20 text-danger font-medium 
+           px-6 py-3 rounded-xl transition-all duration-300 
+           hover:bg-danger/20 active:scale-[0.98];
+  }
+
+  .input-field {
+    @apply w-full bg-elevated border border-border-subtle text-white 
+           px-4 py-3 rounded-xl font-body text-sm
+           placeholder:text-text-muted
+           focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/30
+           transition-all duration-200;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+
+  .badge-success {
+    @apply badge bg-success/10 text-success border border-success/20;
+  }
+
+  .badge-warning {
+    @apply badge bg-warning/10 text-warning border border-warning/20;
+  }
+
+  .badge-danger {
+    @apply badge bg-danger/10 text-danger border border-danger/20;
+  }
+
+  .badge-accent {
+    @apply badge bg-accent/10 text-accent border border-accent/20;
+  }
+
+  .badge-neutral {
+    @apply badge bg-neutral/10 text-neutral border border-neutral/20;
+  }
+
+  .kpi-card {
+    @apply glass-card p-5 flex flex-col gap-2;
+  }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-text-secondary 
+           transition-all duration-200 hover:bg-white/5 hover:text-white;
+  }
+
+  .sidebar-link-active {
+    @apply sidebar-link bg-accent/10 text-accent border border-accent/10;
+  }
+
+  .glow-orb {
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232, 77, 26, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-accent to-accent-light bg-clip-text text-transparent;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+  }
+}
