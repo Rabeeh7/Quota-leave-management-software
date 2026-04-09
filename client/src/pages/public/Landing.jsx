@@ -75,7 +75,7 @@ const Landing = () => {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button onClick={() => setShowForm(true)} className="btn-primary text-lg !px-8 !py-4">
-            Request Quota Manager ->
+            Request Quota Manager &rarr;
           </button>
           <Link to="/login" className="btn-secondary text-lg !px-8 !py-4">
             Login to Dashboard
