@@ -92,7 +92,7 @@ const SuperAdminDashboard = () => {
                 <th className="text-left text-text-secondary font-medium pb-3 pr-4">Department</th>
                 <th className="text-left text-text-secondary font-medium pb-3 pr-4">Institution</th>
                 <th className="text-left text-text-secondary font-medium pb-3 pr-4">Students</th>
-                <th className="text-left text-text-secondary font-medium pb-3 pr-4">Leader</th>
+                <th className="text-left text-text-secondary font-medium pb-3 pr-4">Admin</th>
                 <th className="text-left text-text-secondary font-medium pb-3">Status</th>
               </tr>
             </thead>

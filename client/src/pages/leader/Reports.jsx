@@ -13,7 +13,7 @@ const Reports = () => {
     const fetch = async () => {
       try {
         const semRes = await api.get('/leader/semester/active/current');
-        const res = await api.get(`/fairness/report/${semRes.data.semester._id}`);
+        const res = await api.get(`/rotation/report/${semRes.data.semester._id}`);
         setReport(res.data);
       } catch (err) { console.error(err); }
       finally { setLoading(false); }

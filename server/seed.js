@@ -36,7 +36,7 @@ const seed = async () => {
     console.log('👑 Creating Super Admin...');
     const superadmin = await User.create({
       name: 'Super Admin',
-      email: 'superadmin@fairleave.app',
+      email: 'superadmin@quotamanager.app',
       password: 'SuperAdmin@123',
       role: 'superadmin',
       phone: '+919876543210'
@@ -135,7 +135,7 @@ const seed = async () => {
             ? new Date('2026-01-30') 
             : null,
         emergency_count: i === 0 ? 1 : 0,
-        fairness_score: 0
+        rotation_score: 0
       });
     }
 
@@ -143,7 +143,7 @@ const seed = async () => {
     console.log('🔔 Creating Notifications...');
     await Notification.create({
       user_id: students[0]._id,
-      message: 'Welcome to FairLeave! Your account has been set up.',
+      message: 'Welcome to Quota Manager! Your account has been set up.',
       type: 'info'
     });
     await Notification.create({
@@ -155,8 +155,8 @@ const seed = async () => {
     console.log('\n✅ Seed complete!\n');
     console.log('📋 Login Credentials:');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('Super Admin: superadmin@fairleave.app / SuperAdmin@123');
-    console.log('Leader:      leader@cse.edu / Leader@123');
+    console.log('Super Admin: superadmin@quotamanager.app / SuperAdmin@123');
+    console.log('Admin:       leader@cse.edu / Leader@123');
     console.log('Students:    CS001/CS001, CS002/CS002, CS003/CS003, CS004/CS004, CS005/CS005');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 

@@ -26,8 +26,8 @@ const History = () => {
     <StudentLayout>
       <div className="space-y-5 animate-fade-in">
         <div>
-          <h1 className="font-heading text-xl text-white">Leave History</h1>
-          <p className="text-text-secondary text-sm">Your past leave requests and outcomes</p>
+          <h1 className="font-heading text-xl text-white">Quota History</h1>
+          <p className="text-text-secondary text-sm">Your past quota requests and outcomes</p>
         </div>
 
         {/* Summary */}

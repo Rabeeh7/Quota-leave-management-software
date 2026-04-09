@@ -6,7 +6,9 @@ const AppointLeader = () => {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showDeptModal, setShowDeptModal] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', password: '', phone: '', department_id: '' });
+  const [deptData, setDeptData] = useState({ name: '', institution: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const fetch = async () => {
@@ -31,6 +33,18 @@ const AppointLeader = () => {
     finally { setSubmitting(false); }
   };
 
+  const handleCreateDept = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await api.post('/superadmin/departments', deptData);
+      setShowDeptModal(false);
+      setDeptData({ name: '', institution: '' });
+      fetch();
+    } catch (err) { alert(err.response?.data?.message || 'Error'); }
+    finally { setSubmitting(false); }
+  };
+
   const handleRemove = async (userId) => {
     if (!confirm('Remove this leader?')) return;
     try {
@@ -45,10 +59,13 @@ const AppointLeader = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="font-heading text-2xl font-bold text-white">Manage Leaders</h1>
-          <p className="text-text-secondary mt-1">Appoint or remove department leaders</p>
+          <h1 className="font-heading text-2xl font-bold text-white">Departments & Admins</h1>
+          <p className="text-text-secondary mt-1">Manage departments and their admins</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary text-sm">+ Appoint Leader</button>
+        <div className="flex gap-2">
+          <button onClick={() => setShowDeptModal(true)} className="btn-secondary text-sm">Create Department</button>
+          <button onClick={() => setShowModal(true)} className="btn-primary text-sm">+ Appoint Admin</button>
+        </div>
       </div>
 
       <div className="grid gap-4">
@@ -72,7 +89,7 @@ const AppointLeader = () => {
                   </>
                 ) : (
                   <button onClick={() => { setFormData({ ...formData, department_id: dept._id }); setShowModal(true); }}
-                    className="btn-secondary !px-4 !py-2 text-sm">Assign Leader</button>
+                    className="btn-secondary !px-4 !py-2 text-sm">Assign Admin</button>
                 )}
               </div>
             </div>
@@ -80,7 +97,7 @@ const AppointLeader = () => {
         ))}
       </div>
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Appoint Leader">
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Appoint Admin">
         <form onSubmit={handleAppoint} className="space-y-4">
           <div>
             <label className="block text-sm text-text-secondary mb-1.5">Department</label>
@@ -94,7 +111,7 @@ const AppointLeader = () => {
           </div>
           <div>
             <label className="block text-sm text-text-secondary mb-1.5">Name</label>
-            <input required className="input-field" placeholder="Leader name" value={formData.name}
+            <input required className="input-field" placeholder="Admin name" value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })} />
           </div>
           <div>
@@ -113,7 +130,25 @@ const AppointLeader = () => {
               onChange={e => setFormData({ ...formData, phone: e.target.value })} />
           </div>
           <button type="submit" disabled={submitting} className="btn-primary w-full">
-            {submitting ? 'Appointing...' : 'Appoint Leader'}
+            {submitting ? 'Appointing...' : 'Appoint Admin'}
+          </button>
+        </form>
+      </Modal>
+
+      <Modal isOpen={showDeptModal} onClose={() => setShowDeptModal(false)} title="Create Department">
+        <form onSubmit={handleCreateDept} className="space-y-4">
+          <div>
+            <label className="block text-sm text-text-secondary mb-1.5">Department / Class Name</label>
+            <input required className="input-field" placeholder="e.g. CSE A 2024" value={deptData.name}
+              onChange={e => setDeptData({ ...deptData, name: e.target.value })} />
+          </div>
+          <div>
+            <label className="block text-sm text-text-secondary mb-1.5">Institution Name</label>
+            <input required className="input-field" placeholder="e.g. College of Engineering" value={deptData.institution}
+              onChange={e => setDeptData({ ...deptData, institution: e.target.value })} />
+          </div>
+          <button type="submit" disabled={submitting} className="btn-primary w-full mt-4">
+            {submitting ? 'Creating...' : 'Create Department'}
           </button>
         </form>
       </Modal>

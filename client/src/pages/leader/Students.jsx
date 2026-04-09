@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Badge, PageLoader, Modal, EmptyState } from '../../components/common';
+import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 
 const StudentManager = () => {
+  const { user } = useAuth();
   const [students, setStudents] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [selectedDept, setSelectedDept] = useState('');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
@@ -13,15 +17,28 @@ const StudentManager = () => {
   const [bulkText, setBulkText] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (user?.role === 'superadmin') {
+      api.get('/superadmin/departments').then(res => setDepartments(res.data)).catch(console.error);
+    }
+  }, [user]);
+
   const fetchStudents = async () => {
     try {
-      const res = await api.get('/leader/students/list');
-      setStudents(res.data);
+      setLoading(true);
+      if (user?.role === 'superadmin') {
+        if (!selectedDept) { setStudents([]); return; }
+        const res = await api.get(`/superadmin/students/list/${selectedDept}`);
+        setStudents(res.data);
+      } else {
+        const res = await api.get('/leader/students/list');
+        setStudents(res.data);
+      }
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchStudents(); }, []);
+  useEffect(() => { fetchStudents(); }, [selectedDept, user]);
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -54,9 +71,22 @@ const StudentManager = () => {
 
   const handleToggle = async (id) => {
     try {
-      await api.put(`/leader/students/${id}/toggle-active`);
+      if (user?.role === 'superadmin') {
+        await api.put(`/superadmin/students/${id}/toggle-active`);
+      } else {
+        await api.put(`/leader/students/${id}/toggle-active`);
+      }
       fetchStudents();
     } catch (err) { alert(err.response?.data?.message || 'Error'); }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm('Are you sure you want to permanently delete this student?')) return;
+    try {
+      await api.delete(`/superadmin/students/${id}`);
+      fetchStudents();
+      setShowDetail(null);
+    } catch (err) { alert(err.response?.data?.message || 'Error deleting'); }
   };
 
   const filtered = students.filter(s =>
@@ -68,14 +98,23 @@ const StudentManager = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div>
           <h1 className="font-heading text-2xl font-bold text-white">Student Manager</h1>
           <p className="text-text-secondary mt-1">{students.length} students total</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => setShowBulk(true)} className="btn-secondary text-sm">📥 Bulk Import</button>
-          <button onClick={() => setShowAdd(true)} className="btn-primary text-sm">+ Add Student</button>
+        <div className="flex flex-wrap gap-2 items-center">
+          {user?.role === 'superadmin' ? (
+            <select className="input-field max-w-[250px]" value={selectedDept} onChange={e => setSelectedDept(e.target.value)}>
+              <option value="">Select Department</option>
+              {departments.map(d => <option key={d._id} value={d._id}>{d.name} ({d.institution})</option>)}
+            </select>
+          ) : (
+            <>
+              <button onClick={() => setShowBulk(true)} className="btn-secondary text-sm">Bulk Import</button>
+              <button onClick={() => setShowAdd(true)} className="btn-primary text-sm">+ Add Student</button>
+            </>
+          )}
         </div>
       </div>
 
@@ -123,8 +162,13 @@ const StudentManager = () => {
                   </Badge>
                 </td>
                 <td className="p-4">
-                  <button onClick={(e) => { e.stopPropagation(); handleToggle(s._id); }}
-                    className="btn-ghost text-xs">{s.is_active ? 'Deactivate' : 'Activate'}</button>
+                  {user?.role === 'superadmin' ? (
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(s._id); }}
+                      className="btn-danger w-full !py-1 text-xs">Delete</button>
+                  ) : (
+                    <button onClick={(e) => { e.stopPropagation(); handleToggle(s._id); }}
+                      className="btn-ghost text-xs w-full">{s.is_active ? 'Deactivate' : 'Activate'}</button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -202,6 +246,11 @@ const StudentManager = () => {
                 <p className="text-white font-semibold tabular-nums">{showDetail.profile?.rotation_priority ?? 0}</p>
               </div>
             </div>
+            {user?.role === 'superadmin' && (
+              <button onClick={() => handleDelete(showDetail._id)} className="btn-danger w-full mt-4">
+                Permanently Delete Student
+              </button>
+            )}
           </div>
         )}
       </Modal>

@@ -29,7 +29,7 @@ const StudentDashboard = () => {
   };
 
   const handleRelease = async (allocId) => {
-    if (!confirm('Are you sure you want to release this spot? It will be made available for swapping.')) return;
+    if (!confirm('Are you sure you want to reject this spot? It will be made available for swapping.')) return;
     try {
       await api.put(`/student/allocation/${allocId}/release`);
       window.location.reload();
@@ -37,12 +37,26 @@ const StudentDashboard = () => {
   };
 
   const handleAcceptSwap = async (allocId, requesterId) => {
-    if (!confirm('Are you sure? This will lock in the swap and they will take your spot.')) return;
+    if (!confirm('Are you sure? This will give them your spot.')) return;
     try {
-      await api.post(`/fairness/swap/accept`, { allocationId: allocId, requesterId });
-      alert("Swap automatically approved!");
+      await api.post(`/rotation/swap/accept`, { allocationId: allocId, requesterId });
+      alert("Swap approved!");
       window.location.reload();
     } catch (err) { alert(err.response?.data?.message || 'Error'); }
+  };
+
+  const handleRejectSwap = async (allocId, requesterId) => {
+    try {
+      await api.post(`/rotation/swap/reject`, { allocationId: allocId, requesterId });
+      window.location.reload();
+    } catch (err) { alert(err.response?.data?.message || 'Error'); }
+  };
+
+  const generateWhatsAppLink = (phone, name) => {
+    const cleanPhone = phone?.replace(/[^0-9]/g, '');
+    if (!cleanPhone) return null;
+    const message = encodeURIComponent(`Hi ${name}, I'd like to discuss swapping our Friday quota spots on Quota Manager.`);
+    return `https://wa.me/${cleanPhone}?text=${message}`;
   };
 
   if (loading) return <StudentLayout><PageLoader /></StudentLayout>;
@@ -59,6 +73,11 @@ const StudentDashboard = () => {
   }
 
   const daysLeft = data.nextFriday ? getDaysUntil(data.nextFriday.friday_date) : null;
+
+  // Get swap requests — prefer detailed, fallback to legacy
+  const swapRequests = data.allocation?.swap_request_details?.filter(d => d.status === 'pending') 
+    || data.allocation?.swap_requests 
+    || [];
 
   return (
     <StudentLayout>
@@ -81,66 +100,105 @@ const StudentDashboard = () => {
           </div>
         </div>
 
-        {/* Hero Card */}
-        {data.isAllocated ? (
-          <div className="bg-gradient-to-br from-accent/20 to-accent-light/10 border border-accent/30 rounded-2xl p-5 animate-slide-up">
-            <div className="text-center">
-              <h2 className="font-heading text-xs uppercase tracking-widest text-white mb-2">My Next Quota Date</h2>
-              <p className="text-4xl font-black text-accent">{formatDate(data.nextFriday?.friday_date)}</p>
-              {daysLeft > 0 && (
-                <p className="text-text-secondary text-sm mt-2">{daysLeft} days away</p>
-              )}
+        {/* Hero Card — MY NEXT QUOTA DATE */}
+        <div className={`rounded-2xl p-5 animate-slide-up ${
+          data.isAllocated 
+            ? 'bg-gradient-to-br from-accent/20 to-accent-light/10 border border-accent/30' 
+            : 'glass-card'
+        }`}>
+          <div className="text-center">
+            <h2 className="font-heading text-xs uppercase tracking-widest text-text-secondary mb-2">My Next Quota Date</h2>
+            <p className="text-4xl font-black text-accent">
+              {data.nextQuotaDate ? formatDate(data.nextQuotaDate) : 'TBD'}
+            </p>
+            {data.isAllocated && daysLeft > 0 && (
+              <p className="text-text-secondary text-sm mt-2">{daysLeft} days away</p>
+            )}
+            {!data.isAllocated && data.prediction && (
+              <p className="text-text-secondary text-sm mt-2">
+                Queue position: #{data.prediction.position || '—'} • Confidence: {data.prediction.confidence}
+              </p>
+            )}
+          </div>
+          
+          {/* Accept / Reject buttons when allocated this Friday */}
+          {data.allocation?.status === 'allocated' && (
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => handleConfirm(data.allocation._id)} className="btn-primary flex-1 py-3 text-lg font-semibold">
+                Accept Spot
+              </button>
+              <button onClick={() => handleRelease(data.allocation._id)} className="btn-danger flex-1 py-3 font-semibold">
+                Reject Spot
+              </button>
             </div>
-            
-            {data.allocation?.status === 'allocated' && (
-              <div className="flex gap-3 mt-5">
-                <button onClick={() => handleConfirm(data.allocation._id)} className="btn-primary flex-1 py-3 text-lg font-semibold">
-                  Accept Spot
-                </button>
-                <button onClick={() => handleRelease(data.allocation._id)} className="btn-danger flex-1 py-3 font-semibold">
-                  Reject Spot
-                </button>
-              </div>
-            )}
+          )}
 
-            {data.allocation?.status === 'confirmed' && (
-              <div className="mt-5 text-center py-3 bg-success/10 rounded-xl border border-success/20">
-                <p className="text-success font-semibold">Spot Confirmed</p>
-              </div>
-            )}
+          {data.allocation?.status === 'confirmed' && (
+            <div className="mt-5 text-center py-3 bg-success/10 rounded-xl border border-success/20">
+              <p className="text-success font-semibold">✓ Spot Confirmed</p>
+            </div>
+          )}
 
-            {data.allocation?.status === 'spot_available' && (
-              <div className="mt-6 border-t border-accent/20 pt-4">
-                <p className="text-sm text-text-secondary mb-3">You rejected this spot. It is available for swaps.</p>
-                {data.allocation.swap_requests && data.allocation.swap_requests.length > 0 ? (
-                  <div className="space-y-3">
-                    <p className="font-semibold text-white">Incoming Swap Requests:</p>
-                    {data.allocation.swap_requests.map((reqUser) => (
-                      <div key={reqUser._id} className="flex items-center justify-between bg-elevated border border-border/50 p-3 rounded-lg">
-                        <div>
-                          <p className="text-white text-sm font-medium">{reqUser.name}</p>
-                          <p className="text-text-muted text-xs">{reqUser.roll_no}</p>
+          {/* Spot available — show swap requests */}
+          {data.allocation?.status === 'spot_available' && (
+            <div className="mt-6 border-t border-accent/20 pt-4">
+              <p className="text-sm text-text-secondary mb-3">You rejected this spot. It is available for swaps.</p>
+              {swapRequests.length > 0 ? (
+                <div className="space-y-3">
+                  <p className="font-semibold text-white">Incoming Swap Requests:</p>
+                  {swapRequests.map((reqItem) => {
+                    // Handle both detailed and legacy formats
+                    const reqName = reqItem.requester_name || reqItem.name;
+                    const reqRollNo = reqItem.requester_roll_no || reqItem.roll_no;
+                    const reqPhone = reqItem.requester_phone || reqItem.phone;
+                    const reqId = reqItem.requester_id || reqItem._id;
+                    const reqNextDate = reqItem.requester_next_date;
+                    const whatsappLink = generateWhatsAppLink(reqPhone, reqName);
+
+                    return (
+                      <div key={reqId} className="bg-elevated border border-border/50 p-3 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <p className="text-white text-sm font-medium">{reqName}</p>
+                            <p className="text-text-muted text-xs">{reqRollNo}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            {whatsappLink && (
+                              <a href={whatsappLink} target="_blank" rel="noreferrer" 
+                                className="bg-green-600 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-green-500 transition-colors">
+                                WhatsApp
+                              </a>
+                            )}
+                          </div>
                         </div>
+                        {reqNextDate && (
+                          <p className="text-xs text-accent mb-2">
+                            Their next date: <strong>{formatDate(reqNextDate)}</strong>
+                          </p>
+                        )}
                         <div className="flex gap-2">
-                          {reqUser.phone && (
-                            <a href={`https://wa.me/${reqUser.phone}`} target="_blank" rel="noreferrer" className="btn-secondary text-xs px-3">
-                              WhatsApp
-                            </a>
-                          )}
-                          <button onClick={() => handleAcceptSwap(data.allocation._id, reqUser._id)} className="bg-success text-white px-3 py-1 text-xs rounded-lg font-medium hover:bg-success/80">
-                            Accept
+                          <button onClick={() => handleAcceptSwap(data.allocation._id, reqId)} 
+                            className="bg-success text-white px-4 py-1.5 text-xs rounded-lg font-medium hover:bg-success/80 flex-1">
+                            Accept Swap
+                          </button>
+                          <button onClick={() => handleRejectSwap(data.allocation._id, reqId)} 
+                            className="bg-danger/10 text-danger px-4 py-1.5 text-xs rounded-lg font-medium hover:bg-danger/20 flex-1 border border-danger/20">
+                            Reject
                           </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-text-muted">No one has requested your spot yet.</p>
-                )}
-              </div>
-            )}
-          </div>
-        ) : (
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-text-muted">No one has requested your spot yet.</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Stats (when not allocated this week) */}
+        {!data.isAllocated && (
           <div className="glass-card p-5">
             <div className="flex flex-col gap-4">
               <div className="flex justify-between items-center border-b border-border-subtle pb-4">

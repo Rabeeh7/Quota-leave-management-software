@@ -89,13 +89,13 @@ const Landing = () => {
           <span className="text-xs font-semibold tracking-widest uppercase text-accent">How It Works</span>
           <h2 className="font-heading text-3xl font-bold text-white mt-3">
             Transforming leave management into
-            <br /><span className="text-gradient">fair solutions.</span>
+            <br /><span className="text-gradient">smart rotation solutions.</span>
           </h2>
         </div>
         <div className="grid md:grid-cols-3 gap-6">
           {[
             { icon: 'R', title: 'Rotation Algorithm', desc: 'Smart scoring system ensures students who haven\'t had recent leaves get priority next time.' },
-            { icon: 'C', title: 'Smart Calendar', desc: 'Auto-detects holidays, exam periods, and breaks. Calculates fair averages automatically.' },
+            { icon: 'C', title: 'Smart Calendar', desc: 'Auto-detects holidays, exam periods, and breaks. Calculates quota averages automatically.' },
             { icon: 'T', title: 'Full Transparency', desc: 'Students see their queue position, confidence level, and complete leave history.' },
           ].map((f, i) => (
             <div key={i} className="glass-card-hover p-6 text-center">

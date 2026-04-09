@@ -25,7 +25,7 @@ const Analytics = () => {
   const deptChartData = data?.department_stats?.map(d => ({
     name: d.name.length > 15 ? d.name.substring(0, 15) + '...' : d.name,
     students: d.student_count,
-    fairness: d.avg_fairness
+    quota: d.avg_quota
   })) || [];
 
   return (
@@ -85,9 +85,9 @@ const Analytics = () => {
         </div>
       </div>
 
-      {/* Fairness Overview */}
+      {/* Quota Overview */}
       <div className="glass-card p-5">
-        <h3 className="font-heading text-white mb-4">Fairness Scores Across Departments</h3>
+        <h3 className="font-heading text-white mb-4">Average Quota Usage Across Departments</h3>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={deptChartData} layout="vertical">
@@ -97,7 +97,7 @@ const Analytics = () => {
               <Tooltip
                 contentStyle={{ backgroundColor: '#1A1A1A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
               />
-              <Bar dataKey="fairness" fill="#16A34A" radius={[0, 6, 6, 0]} />
+              <Bar dataKey="quota" fill="#16A34A" radius={[0, 6, 6, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

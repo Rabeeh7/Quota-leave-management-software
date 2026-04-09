@@ -6,8 +6,10 @@ import { formatDate, getDaysUntil } from '../../utils/helpers';
 const LeaderDashboard = () => {
   const [data, setData] = useState(null);
   const [semester, setSemester] = useState(null);
+  const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [runningEngine, setRunningEngine] = useState(false);
+  const [selectedStudentToAdd, setSelectedStudentToAdd] = useState('');
 
   useEffect(() => {
     const fetch = async () => {
@@ -16,6 +18,8 @@ const LeaderDashboard = () => {
         setSemester(semRes.data.semester);
         const dashRes = await api.get(`/leader/dashboard/${semRes.data.semester._id}`);
         setData(dashRes.data);
+        const studentsRes = await api.get('/leader/students/list');
+        setStudents(studentsRes.data);
       } catch (err) {
         console.error(err);
       } finally { setLoading(false); }
@@ -27,8 +31,8 @@ const LeaderDashboard = () => {
     if (!data?.currentFriday) return alert('No active Friday');
     setRunningEngine(true);
     try {
-      const res = await api.post(`/fairness/run/${data.currentFriday._id}`);
-      alert(`Fairness engine complete! ${res.data.allocated?.length || 0} students allocated.`);
+      const res = await api.post(`/rotation/run/${data.currentFriday._id}`);
+      alert(`Rotation engine complete! ${res.data.allocated?.length || 0} students allocated.`);
       window.location.reload();
     } catch (err) {
       alert(err.response?.data?.message || 'Engine error');
@@ -40,12 +44,32 @@ const LeaderDashboard = () => {
     if (!confirm('Are you sure? This will lock the rotation and publish the list.')) return;
     setRunningEngine(true);
     try {
-      const res = await api.post(`/fairness/publish/${data.currentFriday._id}`);
+      const res = await api.post(`/leader/friday/${data.currentFriday._id}/publish`);
       alert(res.data.message || 'List Published successfully!');
       window.location.reload();
     } catch (err) {
       alert(err.response?.data?.message || 'Publish error');
     } finally { setRunningEngine(false); }
+  };
+
+  const handleManualAdd = async () => {
+    if (!selectedStudentToAdd) return;
+    try {
+      await api.post('/leader/override', { 
+        friday_id: data.currentFriday._id, 
+        student_id: selectedStudentToAdd, 
+        reason: 'Manual Addition via Dashboard' 
+      });
+      window.location.reload();
+    } catch (err) { alert(err.response?.data?.message || 'Error adding student'); }
+  };
+
+  const handleManualRemove = async (allocationId) => {
+    if (!confirm('Remove this student from the list?')) return;
+    try {
+      await api.put(`/leader/allocation/${allocationId}/remove`, { reason: 'Manual Removal' });
+      window.location.reload();
+    } catch (err) { alert(err.response?.data?.message || 'Error removing student'); }
   };
 
   if (loading) return <PageLoader />;
@@ -66,7 +90,7 @@ const LeaderDashboard = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="font-heading text-2xl font-bold text-white">Leader Dashboard</h1>
+          <h1 className="font-heading text-2xl font-bold text-white">Admin Dashboard</h1>
           <p className="text-text-secondary mt-1">{semester.semester_name}</p>
         </div>
       </div>
@@ -112,22 +136,44 @@ const LeaderDashboard = () => {
       {/* Allocated Students */}
       {data?.allocations?.length > 0 && (
         <div className="glass-card p-5">
-          <h3 className="font-heading text-white mb-4">
-            Allocated Students ({data.allocations.length}/{data.currentFriday?.total_slots})
-          </h3>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+            <h3 className="font-heading text-white">
+              Allocated Students ({data.allocations.length}/{data.currentFriday?.total_slots})
+            </h3>
+            {data.currentFriday.status !== 'published' && (
+              <div className="flex gap-2">
+                <select 
+                  className="input-field max-w-[200px]"
+                  value={selectedStudentToAdd}
+                  onChange={(e) => setSelectedStudentToAdd(e.target.value)}
+                >
+                  <option value="">Select Student to Add</option>
+                  {students.filter(s => !data.allocations.find(a => a.student_id._id === s._id)).map(s => (
+                    <option key={s._id} value={s._id}>{s.name} ({s.roll_no})</option>
+                  ))}
+                </select>
+                <button onClick={handleManualAdd} className="btn-secondary text-sm">Add</button>
+              </div>
+            )}
+          </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {data.allocations.map((a, i) => (
               <div key={a._id} className="bg-elevated border border-border-subtle rounded-xl p-4 flex items-center gap-3 transition-all hover:border-accent/20">
                 <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-sm">
                   {i + 1}
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="text-white font-medium text-sm">{a.student_id?.name}</p>
                   <p className="text-text-muted text-xs">{a.student_id?.roll_no}</p>
                 </div>
                 <Badge type={a.confirmed ? 'success' : 'warning'} >
                   {a.confirmed ? 'Confirmed' : 'Pending'}
                 </Badge>
+                {data.currentFriday.status !== 'published' && (
+                  <button onClick={() => handleManualRemove(a._id)} className="text-danger hover:text-danger/80 ml-2">
+                    ✕
+                  </button>
+                )}
               </div>
             ))}
           </div>

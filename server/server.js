@@ -39,7 +39,7 @@ app.use('/api/superadmin', require('./routes/superadmin'));
 app.use('/api/department-requests', require('./routes/departmentRequests'));
 app.use('/api/leader', require('./routes/leader'));
 app.use('/api/student', require('./routes/student'));
-app.use('/api/fairness', require('./routes/fairness'));
+app.use('/api/rotation', require('./routes/rotation'));
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -59,5 +59,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 FairLeave server running on port ${PORT}`);
+  console.log(`🚀 Quota Manager server running on port ${PORT}`);
 });

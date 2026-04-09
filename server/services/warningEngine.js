@@ -3,7 +3,7 @@ const Notification = require('../models/Notification');
 
 /**
  * Smart Warnings Engine
- * Runs after each fairness calculation to flag issues
+ * Runs after each rotation calculation to flag issues
  * Returns warnings array for the leader dashboard
  */
 const generateWarnings = async (departmentId, semesterId) => {

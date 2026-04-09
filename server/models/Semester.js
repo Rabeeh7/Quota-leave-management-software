@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const semesterSchema = new mongoose.Schema({
-  department_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Department', required: true },
+  department_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Department', required: false },
   semester_name: { type: String, required: true },
   start_date: { type: Date, required: true },
   end_date: { type: Date, required: true },

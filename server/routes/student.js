@@ -9,7 +9,7 @@ const FridayCalendar = require('../models/FridayCalendar');
 const LeaveRequest = require('../models/LeaveRequest');
 const LeaveAllocation = require('../models/LeaveAllocation');
 const Notification = require('../models/Notification');
-const { predictConfidence } = require('../services/fairnessEngine');
+const { predictConfidence, getNextQuotaDate } = require('../services/fairnessEngine');
 
 router.use(auth, roleGuard('student'));
 
@@ -35,11 +35,11 @@ router.get('/dashboard', async (req, res) => {
     const totalLeaves = allProfiles.reduce((sum, p) => sum + p.total_leaves, 0);
     const classAverage = allProfiles.length > 0 ? totalLeaves / allProfiles.length : 0;
 
-    // Fairness badge
-    let fairnessBadge = 'Equal';
+    // Rotation badge
+    let rotationBadge = 'Equal';
     let myLeaves = profile ? profile.total_leaves : 0;
-    if (myLeaves < classAverage - 1) fairnessBadge = 'Behind';
-    else if (myLeaves > classAverage + 1) fairnessBadge = 'Ahead';
+    if (myLeaves < classAverage - 1) rotationBadge = 'Behind';
+    else if (myLeaves > classAverage + 1) rotationBadge = 'Ahead';
 
     // Next friday
     const now = new Date();
@@ -56,7 +56,32 @@ router.get('/dashboard', async (req, res) => {
     if (nextFriday) {
       allocation = await LeaveAllocation.findOne({ 
         friday_id: nextFriday._id, student_id: user._id, status: { $in: ['allocated', 'confirmed', 'spot_available'] }
-      }).populate('swap_requests', 'name phone roll_no');
+      });
+      
+      // Populate swap_request_details with user info
+      if (allocation && allocation.swap_request_details && allocation.swap_request_details.length > 0) {
+        const populatedDetails = [];
+        for (const detail of allocation.swap_request_details) {
+          const requesterUser = await User.findById(detail.requester_id).select('name roll_no phone');
+          populatedDetails.push({
+            _id: detail._id,
+            requester_id: detail.requester_id,
+            requester_name: requesterUser?.name,
+            requester_roll_no: requesterUser?.roll_no,
+            requester_phone: requesterUser?.phone,
+            requester_next_date: detail.requester_next_date,
+            status: detail.status,
+            created_at: detail.created_at
+          });
+        }
+        allocation = allocation.toObject();
+        allocation.swap_request_details = populatedDetails;
+      } else if (allocation) {
+        // Also populate legacy swap_requests
+        allocation = await LeaveAllocation.findOne({ 
+          friday_id: nextFriday._id, student_id: user._id, status: { $in: ['allocated', 'confirmed', 'spot_available'] }
+        }).populate('swap_requests', 'name phone roll_no');
+      }
       
       isAllocated = !!allocation;
 
@@ -69,6 +94,14 @@ router.get('/dashboard', async (req, res) => {
     let prediction = null;
     if (nextFriday && !isAllocated) {
       prediction = await predictConfidence(user._id, nextFriday._id);
+    }
+
+    // Get predicted next quota date
+    let nextQuotaDate = null;
+    if (isAllocated && nextFriday) {
+      nextQuotaDate = nextFriday.friday_date;
+    } else {
+      nextQuotaDate = await getNextQuotaDate(user._id, department_id);
     }
 
     // Recent notifications
@@ -87,12 +120,13 @@ router.get('/dashboard', async (req, res) => {
       semester: activeSemester,
       profile,
       classAverage: Math.round(classAverage * 100) / 100,
-      fairnessBadge,
+      rotationBadge,
       nextFriday,
       isAllocated,
       allocation,
       myRequest,
       prediction,
+      nextQuotaDate,
       notifications,
       progress
     });
@@ -182,7 +216,16 @@ router.put('/allocation/:id/confirm', async (req, res) => {
     allocation.status = 'confirmed';
     await allocation.save();
 
-    res.json({ message: 'Leave confirmed', allocation });
+    // Update profile last_leave_date
+    const friday = await FridayCalendar.findById(allocation.friday_id);
+    if (friday) {
+      await StudentProfile.findOneAndUpdate(
+        { user_id: req.user._id, semester_id: friday.semester_id },
+        { last_leave_date: friday.friday_date, $inc: { total_leaves: 1 } }
+      );
+    }
+
+    res.json({ message: 'Quota confirmed', allocation });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -215,12 +258,22 @@ router.put('/allocation/:id/release', async (req, res) => {
     if (leader) {
       await Notification.create({
         user_id: leader._id,
-        message: `${req.user.name} released their quota slot. It's now available for swapping!`,
+        message: `${req.user.name} rejected their quota slot. It's now available for swapping!`,
         type: 'info'
       });
     }
 
     res.json({ message: 'Spot marked as available', allocation });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// GET /api/student/next-date
+router.get('/next-date', async (req, res) => {
+  try {
+    const nextDate = await getNextQuotaDate(req.user._id, req.user.department_id);
+    res.json({ nextQuotaDate: nextDate });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -301,7 +354,7 @@ router.get('/leaderboard', async (req, res) => {
     const nextFriday = await FridayCalendar.findOne({
       semester_id: activeSemester._id,
       friday_date: { $gte: now },
-      status: { $in: ['published', 'locked', 'open'] } // if we want to show it
+      status: { $in: ['published', 'locked', 'open'] }
     }).sort({ friday_date: 1 });
 
     let allocations = [];

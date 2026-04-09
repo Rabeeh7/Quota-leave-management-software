@@ -6,8 +6,7 @@ import { getRolePath } from '../../utils/helpers';
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [loginType, setLoginType] = useState('student'); // 'student' or 'admin'
-  const [formData, setFormData] = useState({ email: '', roll_no: '', password: '' });
+  const [formData, setFormData] = useState({ username: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -18,7 +17,6 @@ const Login = () => {
 
     try {
       const credentials = { username: formData.username, password: formData.password };
-
       const user = await login(credentials);
       navigate(getRolePath(user.role));
     } catch (err) {
@@ -49,13 +47,13 @@ const Login = () => {
         <div className="glass-card p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm text-text-secondary mb-1.5">Username (Email or Roll Number)</label>
+              <label className="block text-sm text-text-secondary mb-1.5">Username</label>
               <input
                 type="text"
                 required
                 className="input-field"
-                placeholder="Enter username"
-                value={formData.username || ''}
+                placeholder="Email or Roll Number"
+                value={formData.username}
                 onChange={e => setFormData({ ...formData, username: e.target.value })}
               />
             </div>
@@ -93,7 +91,7 @@ const Login = () => {
         <div className="mt-6 glass-card p-4">
           <p className="text-xs text-text-muted mb-2 font-semibold uppercase tracking-wider">Demo Accounts</p>
           <div className="space-y-1.5 text-xs text-text-secondary">
-            <p><strong className="text-white">Super Admin:</strong> superadmin@fairleave.app / SuperAdmin@123</p>
+            <p><strong className="text-white">Super Admin:</strong> superadmin@quotamanager.app / SuperAdmin@123</p>
             <p><strong className="text-white">Admin:</strong> leader@cse.edu / Leader@123</p>
             <p><strong className="text-white">Student:</strong> CS001 / CS001</p>
           </div>

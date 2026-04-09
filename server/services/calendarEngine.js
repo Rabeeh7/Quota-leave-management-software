@@ -151,7 +151,7 @@ const getCalendarStats = async (semester_id, total_students) => {
     .filter(f => f.status !== 'blocked' && f.status !== 'passed')
     .reduce((sum, f) => sum + f.total_slots, 0);
   
-  const fairAverage = total_students > 0 
+  const quotaAverage = total_students > 0 
     ? Math.round((totalSlots / total_students) * 100) / 100 
     : 0;
 
@@ -161,7 +161,7 @@ const getCalendarStats = async (semester_id, total_students) => {
     passedFridays,
     validFridays,
     totalSlots,
-    fairAverage,
+    quotaAverage,
     total_students
   };
 };

@@ -12,13 +12,13 @@ import SuperAdminDashboard from './pages/superadmin/Dashboard';
 import Requests from './pages/superadmin/Requests';
 import AppointLeader from './pages/superadmin/AppointLeader';
 import Analytics from './pages/superadmin/Analytics';
+import SemesterSetup from './pages/leader/SemesterSetup';
+import FridayList from './pages/leader/FridayList';
+import BlockedFridays from './pages/leader/BlockedFridays';
 
 // Leader
 import LeaderDashboard from './pages/leader/Dashboard';
-import SemesterSetup from './pages/leader/SemesterSetup';
-import FridayList from './pages/leader/FridayList';
 import Students from './pages/leader/Students';
-import BlockedFridays from './pages/leader/BlockedFridays';
 import Reports from './pages/leader/Reports';
 
 // Student
@@ -49,6 +49,10 @@ function App() {
             <Route path="dashboard" element={<SuperAdminDashboard />} />
             <Route path="requests" element={<Requests />} />
             <Route path="appoint-leader" element={<AppointLeader />} />
+            <Route path="setup" element={<SemesterSetup />} />
+            <Route path="friday-list" element={<FridayList />} />
+            <Route path="blocked" element={<BlockedFridays />} />
+            <Route path="students" element={<Students />} />
             <Route path="analytics" element={<Analytics />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
@@ -63,10 +67,7 @@ function App() {
             }
           >
             <Route path="dashboard" element={<LeaderDashboard />} />
-            <Route path="setup" element={<SemesterSetup />} />
-            <Route path="friday-list" element={<FridayList />} />
             <Route path="students" element={<Students />} />
-            <Route path="blocked" element={<BlockedFridays />} />
             <Route path="reports" element={<Reports />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>

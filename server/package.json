@@ -1,7 +1,7 @@
 {
-  "name": "fairleave-server",
+  "name": "quotamanager-server",
   "version": "1.0.0",
-  "description": "FairLeave - Friday Quota Leave Management System Backend",
+  "description": "Quota Manager - Friday Quota Leave Management System Backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

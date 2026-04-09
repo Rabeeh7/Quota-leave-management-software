@@ -63,7 +63,7 @@ export const Badge = ({ type = 'neutral', children }) => {
   return <span className={classes[type] || classes.neutral}>{children}</span>;
 };
 
-export const FairnessRing = ({ score, size = 80, label }) => {
+export const RotationRing = ({ score, size = 80, label }) => {
   const radius = (size - 8) / 2;
   const circumference = 2 * Math.PI * radius;
   const normalizedScore = Math.min(100, Math.max(0, score));

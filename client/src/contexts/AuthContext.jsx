@@ -14,8 +14,8 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('fairleave_token');
-    const savedUser = localStorage.getItem('fairleave_user');
+    const token = localStorage.getItem('quota_token');
+    const savedUser = localStorage.getItem('quota_user');
     
     if (token && savedUser) {
       setUser(JSON.parse(savedUser));
@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
       api.get('/auth/me')
         .then(res => {
           setUser(res.data);
-          localStorage.setItem('fairleave_user', JSON.stringify(res.data));
+          localStorage.setItem('quota_user', JSON.stringify(res.data));
         })
         .catch(() => {
           logout();
@@ -38,16 +38,16 @@ export const AuthProvider = ({ children }) => {
     const res = await api.post('/auth/login', credentials);
     const { token, user: userData } = res.data;
     
-    localStorage.setItem('fairleave_token', token);
-    localStorage.setItem('fairleave_user', JSON.stringify(userData));
+    localStorage.setItem('quota_token', token);
+    localStorage.setItem('quota_user', JSON.stringify(userData));
     setUser(userData);
     
     return userData;
   };
 
   const logout = () => {
-    localStorage.removeItem('fairleave_token');
-    localStorage.removeItem('fairleave_user');
+    localStorage.removeItem('quota_token');
+    localStorage.removeItem('quota_user');
     setUser(null);
   };
 

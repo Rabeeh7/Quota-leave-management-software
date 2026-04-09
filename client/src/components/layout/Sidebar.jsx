@@ -4,16 +4,17 @@ import { useAuth } from '../../contexts/AuthContext';
 const superadminLinks = [
   { to: '/superadmin/dashboard', label: 'Dashboard' },
   { to: '/superadmin/requests', label: 'Requests' },
-  { to: '/superadmin/appoint-leader', label: 'Leaders' },
+  { to: '/superadmin/appoint-leader', label: 'Departments' },
+  { to: '/superadmin/setup', label: 'Semester Setup' },
+  { to: '/superadmin/friday-list', label: 'Friday List' },
+  { to: '/superadmin/blocked', label: 'Blocked Dates' },
+  { to: '/superadmin/students', label: 'Students' },
   { to: '/superadmin/analytics', label: 'Analytics' },
 ];
 
 const leaderLinks = [
   { to: '/leader/dashboard', label: 'Dashboard' },
-  { to: '/leader/setup', label: 'Semester' },
-  { to: '/leader/friday-list', label: 'Friday List' },
   { to: '/leader/students', label: 'Students' },
-  { to: '/leader/blocked', label: 'Blocked' },
   { to: '/leader/reports', label: 'Reports' },
 ];
 
@@ -40,7 +41,7 @@ const Sidebar = () => {
             </div>
             <div>
               <h1 className="font-heading font-bold text-lg text-white">Quota Manager</h1>
-              <span className="text-xs text-text-secondary capitalize">{user?.role}</span>
+              <span className="text-xs text-text-secondary capitalize">{user?.role === 'leader' ? 'Admin' : user?.role === 'superadmin' ? 'Super Admin' : user?.role}</span>
             </div>
           </div>
         </div>

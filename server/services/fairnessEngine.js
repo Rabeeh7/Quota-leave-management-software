@@ -99,12 +99,16 @@ const publishList = async (fridayId) => {
       type: 'info'
     });
 
-    // Update their profile priority visually if needed
+    // Update their profile priority
     await StudentProfile.findOneAndUpdate(
       { user_id: student.student_id, semester_id: friday.semester_id },
       { $inc: { rotation_priority: 1 } }
     );
   }
+
+  // Mark friday as published
+  friday.status = 'published';
+  await friday.save();
 
   return { message: "List published successfully", allocations };
 };
@@ -159,23 +163,109 @@ const predictConfidence = async (studentId, fridayId) => {
   };
 };
 
+/**
+ * Predict the next quota date for a student based on their queue position
+ */
+const getNextQuotaDate = async (studentId, departmentId) => {
+  try {
+    const user = await User.findById(studentId);
+    if (!user) return null;
+
+    const now = new Date();
+    
+    // Find upcoming open/published fridays
+    const upcomingFridays = await FridayCalendar.find({
+      department_id: departmentId,
+      friday_date: { $gte: now },
+      status: { $in: ['open', 'locked', 'published'] }
+    }).sort({ friday_date: 1 });
+
+    if (upcomingFridays.length === 0) return null;
+
+    // Check each upcoming friday for this student's position
+    for (const friday of upcomingFridays) {
+      // Check if already allocated
+      const existingAlloc = await LeaveAllocation.findOne({
+        friday_id: friday._id,
+        student_id: studentId,
+        status: { $in: ['allocated', 'confirmed'] }
+      });
+      if (existingAlloc) return friday.friday_date;
+
+      // Run rotation preview to see if student would be in the list
+      const result = await runRotationEngine(friday._id);
+      const position = result.previewList.findIndex(
+        s => s.student_id.toString() === studentId.toString()
+      ) + 1;
+
+      if (position > 0 && position <= friday.total_slots) {
+        return friday.friday_date;
+      }
+    }
+
+    // If not found in any upcoming, estimate based on position
+    if (upcomingFridays.length > 0) {
+      const firstFriday = upcomingFridays[0];
+      const result = await runRotationEngine(firstFriday._id);
+      const position = result.previewList.findIndex(
+        s => s.student_id.toString() === studentId.toString()
+      ) + 1;
+      
+      if (position > 0) {
+        const weeksAway = Math.ceil(position / firstFriday.total_slots);
+        const estimatedDate = new Date(firstFriday.friday_date);
+        estimatedDate.setDate(estimatedDate.getDate() + (weeksAway - 1) * 7);
+        return estimatedDate;
+      }
+    }
+
+    return null;
+  } catch (err) {
+    console.error('getNextQuotaDate error:', err);
+    return null;
+  }
+};
+
 const requestSwap = async (allocationId, requesterId) => {
   const allocation = await LeaveAllocation.findById(allocationId);
   if(!allocation) throw new Error("Allocation not found");
   if(allocation.status !== 'spot_available') throw new Error("This spot is not available for swapping");
 
+  // Don't allow self-swap
+  if (allocation.student_id.toString() === requesterId.toString()) {
+    throw new Error("You cannot swap with yourself");
+  }
+
+  // Check if already requested
+  const alreadyRequested = allocation.swap_request_details.find(
+    d => d.requester_id.toString() === requesterId.toString()
+  );
+  if (alreadyRequested) throw new Error("You have already requested this swap");
+
+  // Get requester's predicted next date
+  const requester = await User.findById(requesterId);
+  const requesterNextDate = await getNextQuotaDate(requesterId, allocation.department_id);
+
+  // Add to legacy array
   if (!allocation.swap_requests.includes(requesterId)) {
     allocation.swap_requests.push(requesterId);
-    await allocation.save();
-
-    const requester = await User.findById(requesterId);
-    
-    await Notification.create({
-      user_id: allocation.student_id,
-      message: `${requester.name} requested to swap your available quota spot!`,
-      type: 'info'
-    });
   }
+
+  // Add to detailed array
+  allocation.swap_request_details.push({
+    requester_id: requesterId,
+    requester_next_date: requesterNextDate,
+    status: 'pending'
+  });
+
+  await allocation.save();
+
+  await Notification.create({
+    user_id: allocation.student_id,
+    message: `${requester.name} requested to swap your available quota spot!`,
+    type: 'swap'
+  });
+
   return allocation;
 };
 
@@ -184,25 +274,128 @@ const acceptSwap = async (allocationId, userId, requesterId) => {
   if(!allocation) throw new Error("Allocation not found");
   if(allocation.student_id.toString() !== userId.toString()) throw new Error("Unauthorized to accept this swap");
   
-  // Accept logic: Auto-approve
+  // Update request detail status
+  const requestDetail = allocation.swap_request_details.find(
+    d => d.requester_id.toString() === requesterId.toString()
+  );
+  if (requestDetail) {
+    requestDetail.status = 'accepted';
+  }
+
+  // Mark allocation as swapped
   allocation.status = 'swapped';
   await allocation.save();
 
+  // Create new allocation for the requester
   await LeaveAllocation.create({
     friday_id: allocation.friday_id,
     department_id: allocation.department_id,
     student_id: requesterId,
     allocation_type: 'swap',
-    status: 'allocated' // Gives the requester the confirmed spot
+    status: 'allocated'
   });
 
-  // Increment total leaves & swap counts
+  // Update requester profile stats
   await StudentProfile.findOneAndUpdate(
     { user_id: requesterId },
     { $inc: { total_leaves: 1, swap_count: 1 } }
   );
 
-  return { message: "Swap automatically approved!" };
+  // Notify requester
+  const originalStudent = await User.findById(userId);
+  await Notification.create({
+    user_id: requesterId,
+    message: `${originalStudent.name} accepted your swap request! You now have a quota spot.`,
+    type: 'swap'
+  });
+
+  // Notify admin/leader
+  const leader = await User.findOne({
+    department_id: allocation.department_id, role: 'leader'
+  });
+  if (leader) {
+    const requester = await User.findById(requesterId);
+    await Notification.create({
+      user_id: leader._id,
+      message: `Swap completed: ${requester.name} took ${originalStudent.name}'s spot.`,
+      type: 'swap'
+    });
+  }
+
+  return { message: "Swap approved!" };
+};
+
+const rejectSwapRequest = async (allocationId, userId, requesterId) => {
+  const allocation = await LeaveAllocation.findById(allocationId);
+  if(!allocation) throw new Error("Allocation not found");
+  if(allocation.student_id.toString() !== userId.toString()) throw new Error("Unauthorized");
+
+  // Update detail status
+  const requestDetail = allocation.swap_request_details.find(
+    d => d.requester_id.toString() === requesterId.toString()
+  );
+  if (requestDetail) {
+    requestDetail.status = 'rejected';
+    await allocation.save();
+  }
+
+  // Notify requester
+  const originalStudent = await User.findById(userId);
+  await Notification.create({
+    user_id: requesterId,
+    message: `${originalStudent.name} rejected your swap request.`,
+    type: 'info'
+  });
+
+  return { message: "Swap request rejected" };
+};
+
+const adminApproveSwap = async (allocationId, requesterId) => {
+  const allocation = await LeaveAllocation.findById(allocationId);
+  if(!allocation) throw new Error("Allocation not found");
+
+  // Admin force-approves the swap
+  allocation.status = 'swapped';
+  const requestDetail = allocation.swap_request_details.find(
+    d => d.requester_id.toString() === requesterId.toString()
+  );
+  if (requestDetail) {
+    requestDetail.status = 'accepted';
+  }
+  await allocation.save();
+
+  // Create new allocation for the requester
+  await LeaveAllocation.create({
+    friday_id: allocation.friday_id,
+    department_id: allocation.department_id,
+    student_id: requesterId,
+    allocation_type: 'swap',
+    status: 'allocated'
+  });
+
+  // Update requester profile stats
+  await StudentProfile.findOneAndUpdate(
+    { user_id: requesterId },
+    { $inc: { total_leaves: 1, swap_count: 1 } }
+  );
+
+  // Notify both students
+  const requester = await User.findById(requesterId);
+  const originalStudent = await User.findById(allocation.student_id);
+
+  await Notification.create({
+    user_id: requesterId,
+    message: `Admin approved your swap request. You now have a quota spot!`,
+    type: 'swap'
+  });
+
+  await Notification.create({
+    user_id: allocation.student_id,
+    message: `Admin approved the swap — ${requester.name} has taken your spot.`,
+    type: 'swap'
+  });
+
+  return { message: "Admin swap approval complete!" };
 };
 
 module.exports = {
@@ -211,6 +404,9 @@ module.exports = {
   recalculateAfterRemoval,
   generateRotationReport,
   predictConfidence,
+  getNextQuotaDate,
   requestSwap,
-  acceptSwap
+  acceptSwap,
+  rejectSwapRequest,
+  adminApproveSwap
 };
