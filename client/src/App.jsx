@@ -23,6 +23,7 @@ import Reports from './pages/leader/Reports';
 
 // Student
 import StudentDashboard from './pages/student/Dashboard';
+import StudentLeaderboard from './pages/student/Leaderboard';
 import StudentRequest from './pages/student/Request';
 import StudentHistory from './pages/student/History';
 import StudentProfile from './pages/student/Profile';
@@ -76,6 +77,14 @@ function App() {
             element={
               <AuthGuard allowedRoles={['student']}>
                 <StudentDashboard />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/student/leaderboard"
+            element={
+              <AuthGuard allowedRoles={['student']}>
+                <StudentLeaderboard />
               </AuthGuard>
             }
           />

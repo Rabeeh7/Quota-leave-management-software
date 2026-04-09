@@ -55,8 +55,9 @@ router.get('/dashboard', async (req, res) => {
     let myRequest = null;
     if (nextFriday) {
       allocation = await LeaveAllocation.findOne({ 
-        friday_id: nextFriday._id, student_id: user._id, released: false 
-      });
+        friday_id: nextFriday._id, student_id: user._id, status: { $in: ['allocated', 'confirmed', 'spot_available'] }
+      }).populate('swap_requests', 'name phone roll_no');
+      
       isAllocated = !!allocation;
 
       myRequest = await LeaveRequest.findOne({ 
@@ -178,7 +179,7 @@ router.put('/allocation/:id/confirm', async (req, res) => {
     });
     if (!allocation) return res.status(404).json({ message: 'Allocation not found' });
 
-    allocation.confirmed = true;
+    allocation.status = 'confirmed';
     await allocation.save();
 
     res.json({ message: 'Leave confirmed', allocation });
@@ -195,8 +196,7 @@ router.put('/allocation/:id/release', async (req, res) => {
     });
     if (!allocation) return res.status(404).json({ message: 'Allocation not found' });
 
-    allocation.released = true;
-    allocation.confirmed = false;
+    allocation.status = 'spot_available';
     await allocation.save();
 
     // Update the request status
@@ -215,12 +215,12 @@ router.put('/allocation/:id/release', async (req, res) => {
     if (leader) {
       await Notification.create({
         user_id: leader._id,
-        message: `${req.user.name} released their leave slot. 1 slot available.`,
+        message: `${req.user.name} released their quota slot. It's now available for swapping!`,
         type: 'info'
       });
     }
 
-    res.json({ message: 'Leave released', allocation });
+    res.json({ message: 'Spot marked as available', allocation });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -279,6 +279,75 @@ router.put('/notifications/read-all', async (req, res) => {
       { read: true }
     );
     res.json({ message: 'All notifications marked as read' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// GET /api/student/leaderboard
+router.get('/leaderboard', async (req, res) => {
+  try {
+    const user = req.user;
+    
+    const activeSemester = await Semester.findOne({ department_id: user.department_id, is_active: true });
+    if (!activeSemester) return res.json({ message: 'No active semester', students: [] });
+
+    // Fetch all active students in the semester
+    const profiles = await StudentProfile.find({ semester_id: activeSemester._id })
+      .populate('user_id', 'name roll_no is_active phone');
+      
+    // Next friday
+    const now = new Date();
+    const nextFriday = await FridayCalendar.findOne({
+      semester_id: activeSemester._id,
+      friday_date: { $gte: now },
+      status: { $in: ['published', 'locked', 'open'] } // if we want to show it
+    }).sort({ friday_date: 1 });
+
+    let allocations = [];
+    if (nextFriday) {
+      allocations = await LeaveAllocation.find({ friday_id: nextFriday._id });
+    }
+
+    const students = profiles
+      .filter(p => p.user_id && p.user_id.is_active)
+      .map(p => {
+        let status = 'none'; // Not this week
+        let allocationId = null;
+
+        if (nextFriday) {
+          const alloc = allocations.find(a => a.student_id.toString() === p.user_id._id.toString());
+          if (alloc) {
+            status = alloc.status === 'spot_available' ? 'available' : 'allocated';
+            allocationId = alloc._id;
+          }
+        }
+
+        return {
+          _id: p.user_id._id,
+          name: p.user_id.name,
+          roll_no: p.user_id.roll_no,
+          phone: p.user_id.phone,
+          status,
+          allocation_id: allocationId,
+          quota_used: p.total_leaves
+        };
+      });
+
+    // Sort: allocated first, available next, none last. Then by quota_used
+    students.sort((a, b) => {
+      const order = { 'available': 1, 'allocated': 2, 'none': 3 };
+      if (order[a.status] !== order[b.status]) {
+        return order[a.status] - order[b.status];
+      }
+      return a.quota_used - b.quota_used;
+    });
+
+    res.json({
+      friday: nextFriday ? { _id: nextFriday._id, date: nextFriday.friday_date } : null,
+      students
+    });
+
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

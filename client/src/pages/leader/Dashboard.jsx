@@ -27,11 +27,24 @@ const LeaderDashboard = () => {
     if (!data?.currentFriday) return alert('No active Friday');
     setRunningEngine(true);
     try {
-      const res = await api.post(`/leader/fairness/run/${data.currentFriday._id}`);
+      const res = await api.post(`/fairness/run/${data.currentFriday._id}`);
       alert(`Fairness engine complete! ${res.data.allocated?.length || 0} students allocated.`);
       window.location.reload();
     } catch (err) {
       alert(err.response?.data?.message || 'Engine error');
+    } finally { setRunningEngine(false); }
+  };
+
+  const handlePublishList = async () => {
+    if (!data?.currentFriday) return alert('No active Friday');
+    if (!confirm('Are you sure? This will lock the rotation and publish the list.')) return;
+    setRunningEngine(true);
+    try {
+      const res = await api.post(`/fairness/publish/${data.currentFriday._id}`);
+      alert(res.data.message || 'List Published successfully!');
+      window.location.reload();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Publish error');
     } finally { setRunningEngine(false); }
   };
 
@@ -40,7 +53,6 @@ const LeaderDashboard = () => {
   if (!semester) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
-        <span className="text-6xl mb-4">📅</span>
         <h2 className="font-heading text-2xl text-white mb-2">No Active Semester</h2>
         <p className="text-text-secondary mb-6">Set up a semester to start managing Friday leaves.</p>
         <a href="/leader/setup" className="btn-primary">Setup Semester</a>
@@ -61,10 +73,10 @@ const LeaderDashboard = () => {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard icon="🎓" label="Total Students" value={data?.totalStudents || 0} />
-        <KPICard icon="📋" label="Friday Slots" value={data?.currentFriday?.total_slots || 0} />
-        <KPICard icon="✋" label="Pending Requests" value={data?.pendingRequests || 0} color="text-warning" />
-        <KPICard icon="⚠️" label="Fairness Risk" value={data?.riskCount || 0} color="text-danger" />
+        <KPICard label="Total Students" value={data?.totalStudents || 0} />
+        <KPICard label="Friday Slots" value={data?.currentFriday?.total_slots || 0} />
+        <KPICard label="Pending Requests" value={data?.pendingRequests || 0} color="text-warning" />
+        <KPICard label="Rotation Risk" value={data?.riskCount || 0} color="text-danger" />
       </div>
 
       {/* Current Friday Card */}
@@ -83,10 +95,16 @@ const LeaderDashboard = () => {
                 {data.currentFriday.status}
               </Badge>
             </div>
-            <button onClick={handleRunEngine} disabled={runningEngine} 
-              className="btn-primary text-lg !px-8 !py-4 animate-pulse-glow">
-              {runningEngine ? '⚙️ Running...' : '🎯 Run Fairness Engine'}
-            </button>
+            <div className="flex gap-2">
+              <button onClick={handleRunEngine} disabled={runningEngine} 
+                className="btn-secondary text-lg !px-6 !py-3">
+                {runningEngine ? 'Running...' : 'Preview Rotation'}
+              </button>
+              <button onClick={handlePublishList} disabled={runningEngine} 
+                className="btn-primary text-lg !px-8 !py-3 animate-pulse-glow">
+                Publish List
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -119,7 +137,7 @@ const LeaderDashboard = () => {
       {/* Warnings */}
       {data?.warnings?.length > 0 && (
         <div className="glass-card p-5">
-          <h3 className="font-heading text-white mb-4">⚡ Smart Warnings</h3>
+          <h3 className="font-heading text-white mb-4">Smart Warnings</h3>
           <div className="space-y-2">
             {data.warnings.map((w, i) => (
               <div key={i} className={`flex items-center gap-3 p-3 rounded-xl border ${
@@ -127,7 +145,6 @@ const LeaderDashboard = () => {
                 w.severity === 'warning' ? 'bg-warning/5 border-warning/10' :
                 'bg-accent/5 border-accent/10'
               }`}>
-                <span className="text-lg">{w.icon}</span>
                 <p className="text-sm text-text-secondary flex-1">{w.message}</p>
                 <span className="text-xs text-text-muted">{w.roll_no}</span>
               </div>

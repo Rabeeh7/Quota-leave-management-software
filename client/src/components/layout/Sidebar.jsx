@@ -2,19 +2,19 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 const superadminLinks = [
-  { to: '/superadmin/dashboard', label: 'Dashboard', icon: '📊' },
-  { to: '/superadmin/requests', label: 'Requests', icon: '📨' },
-  { to: '/superadmin/appoint-leader', label: 'Leaders', icon: '👤' },
-  { to: '/superadmin/analytics', label: 'Analytics', icon: '📈' },
+  { to: '/superadmin/dashboard', label: 'Dashboard' },
+  { to: '/superadmin/requests', label: 'Requests' },
+  { to: '/superadmin/appoint-leader', label: 'Leaders' },
+  { to: '/superadmin/analytics', label: 'Analytics' },
 ];
 
 const leaderLinks = [
-  { to: '/leader/dashboard', label: 'Dashboard', icon: '📊' },
-  { to: '/leader/setup', label: 'Semester', icon: '📅' },
-  { to: '/leader/friday-list', label: 'Friday List', icon: '📋' },
-  { to: '/leader/students', label: 'Students', icon: '🎓' },
-  { to: '/leader/blocked', label: 'Blocked', icon: '🚫' },
-  { to: '/leader/reports', label: 'Reports', icon: '📈' },
+  { to: '/leader/dashboard', label: 'Dashboard' },
+  { to: '/leader/setup', label: 'Semester' },
+  { to: '/leader/friday-list', label: 'Friday List' },
+  { to: '/leader/students', label: 'Students' },
+  { to: '/leader/blocked', label: 'Blocked' },
+  { to: '/leader/reports', label: 'Reports' },
 ];
 
 const Sidebar = () => {
@@ -36,10 +36,10 @@ const Sidebar = () => {
         <div className="p-6 border-b border-border-subtle">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-accent-light flex items-center justify-center">
-              <span className="text-white font-bold text-lg">F</span>
+              <span className="text-white font-bold text-lg">Q</span>
             </div>
             <div>
-              <h1 className="font-heading font-bold text-lg text-white">FairLeave</h1>
+              <h1 className="font-heading font-bold text-lg text-white">Quota Manager</h1>
               <span className="text-xs text-text-secondary capitalize">{user?.role}</span>
             </div>
           </div>
@@ -55,8 +55,7 @@ const Sidebar = () => {
                 isActive ? 'sidebar-link-active' : 'sidebar-link'
               }
             >
-              <span className="text-lg">{link.icon}</span>
-              <span className="font-medium">{link.label}</span>
+              <span className="font-medium px-2">{link.label}</span>
             </NavLink>
           ))}
         </nav>
@@ -75,7 +74,7 @@ const Sidebar = () => {
             </div>
           </div>
           <button onClick={handleLogout} className="btn-ghost w-full text-left text-sm text-danger hover:text-danger">
-            🚪 Logout
+            Logout
           </button>
         </div>
       </aside>
@@ -88,13 +87,12 @@ const Sidebar = () => {
               key={link.to}
               to={link.to}
               className={({ isActive }) =>
-                `flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
-                  isActive ? 'text-accent' : 'text-text-muted'
+                `flex flex-col items-center py-3 px-3 rounded-lg transition-colors ${
+                  isActive ? 'text-accent border-t-2 border-accent' : 'text-text-muted mt-0.5'
                 }`
               }
             >
-              <span className="text-xl">{link.icon}</span>
-              <span className="text-[10px] mt-0.5">{link.label}</span>
+              <span className="text-[12px] font-semibold">{link.label}</span>
             </NavLink>
           ))}
         </div>

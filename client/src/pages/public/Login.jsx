@@ -17,9 +17,7 @@ const Login = () => {
     setError('');
 
     try {
-      const credentials = loginType === 'student'
-        ? { roll_no: formData.roll_no, password: formData.password }
-        : { email: formData.email, password: formData.password };
+      const credentials = { username: formData.username, password: formData.password };
 
       const user = await login(credentials);
       navigate(getRolePath(user.role));
@@ -40,65 +38,27 @@ const Login = () => {
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-3 mb-4">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-accent-light flex items-center justify-center">
-              <span className="text-white font-bold text-2xl">F</span>
+              <span className="text-white font-bold text-2xl">Q</span>
             </div>
           </Link>
           <h1 className="font-heading text-3xl font-bold text-white">Welcome Back</h1>
-          <p className="text-text-secondary mt-2">Sign in to your FairLeave account</p>
-        </div>
-
-        {/* Login Type Toggle */}
-        <div className="flex bg-elevated rounded-xl p-1 mb-6">
-          <button
-            onClick={() => { setLoginType('student'); setError(''); }}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              loginType === 'student' 
-                ? 'bg-accent text-white shadow-glow-sm' 
-                : 'text-text-secondary hover:text-white'
-            }`}
-          >
-            🎓 Student
-          </button>
-          <button
-            onClick={() => { setLoginType('admin'); setError(''); }}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              loginType === 'admin' 
-                ? 'bg-accent text-white shadow-glow-sm' 
-                : 'text-text-secondary hover:text-white'
-            }`}
-          >
-            👤 Admin / Leader
-          </button>
+          <p className="text-text-secondary mt-2">Sign in to your Quota Manager account</p>
         </div>
 
         {/* Form */}
         <div className="glass-card p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
-            {loginType === 'student' ? (
-              <div>
-                <label className="block text-sm text-text-secondary mb-1.5">Roll Number</label>
-                <input
-                  type="text"
-                  required
-                  className="input-field"
-                  placeholder="e.g. CS001"
-                  value={formData.roll_no}
-                  onChange={e => setFormData({ ...formData, roll_no: e.target.value })}
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="block text-sm text-text-secondary mb-1.5">Email</label>
-                <input
-                  type="email"
-                  required
-                  className="input-field"
-                  placeholder="your@email.com"
-                  value={formData.email}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-            )}
+            <div>
+              <label className="block text-sm text-text-secondary mb-1.5">Username (Email or Roll Number)</label>
+              <input
+                type="text"
+                required
+                className="input-field"
+                placeholder="Enter username"
+                value={formData.username || ''}
+                onChange={e => setFormData({ ...formData, username: e.target.value })}
+              />
+            </div>
 
             <div>
               <label className="block text-sm text-text-secondary mb-1.5">Password</label>
@@ -133,14 +93,14 @@ const Login = () => {
         <div className="mt-6 glass-card p-4">
           <p className="text-xs text-text-muted mb-2 font-semibold uppercase tracking-wider">Demo Accounts</p>
           <div className="space-y-1.5 text-xs text-text-secondary">
-            <p>🔑 <strong className="text-white">Super Admin:</strong> superadmin@fairleave.app / SuperAdmin@123</p>
-            <p>🔑 <strong className="text-white">Leader:</strong> leader@cse.edu / Leader@123</p>
-            <p>🔑 <strong className="text-white">Student:</strong> CS001 / CS001</p>
+            <p><strong className="text-white">Super Admin:</strong> superadmin@fairleave.app / SuperAdmin@123</p>
+            <p><strong className="text-white">Admin:</strong> leader@cse.edu / Leader@123</p>
+            <p><strong className="text-white">Student:</strong> CS001 / CS001</p>
           </div>
         </div>
 
         <p className="text-center text-text-muted text-sm mt-6">
-          <Link to="/" className="text-accent hover:text-accent-light transition-colors">← Back to home</Link>
+          <Link to="/" className="text-accent hover:text-accent-light transition-colors">Back to home</Link>
         </p>
       </div>
     </div>

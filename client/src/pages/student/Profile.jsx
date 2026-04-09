@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PageLoader, FairnessRing } from '../../components/common';
+import { PageLoader } from '../../components/common';
 import StudentLayout from '../../components/layout/StudentLayout';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
@@ -37,7 +37,6 @@ const Profile = () => {
   if (loading) return <StudentLayout><PageLoader /></StudentLayout>;
 
   const profile = dashData?.profile;
-  const fairnessPercent = profile ? Math.max(0, Math.min(100, 50 + (profile.fairness_score * 10))) : 50;
 
   return (
     <StudentLayout>
@@ -51,16 +50,12 @@ const Profile = () => {
           <p className="text-text-muted text-xs mt-1">{user?.phone}</p>
         </div>
 
-        {/* Fairness Ring */}
+        {/* Priority */}
         <div className="glass-card p-5 flex flex-col items-center">
-          <h3 className="font-heading text-white text-sm mb-3">Fairness Score</h3>
-          <div className="relative">
-            <FairnessRing score={fairnessPercent} size={100} />
-          </div>
-          <p className="text-text-secondary text-xs mt-2">
-            {fairnessPercent >= 70 ? 'You\'re getting a fair share!' :
-             fairnessPercent >= 40 ? 'About average — keep requesting.' :
-             'You deserve more leaves! Priority is higher now.'}
+          <h3 className="font-heading text-white text-sm mb-1">Rotation Priority</h3>
+          <p className="text-3xl font-bold text-accent">{profile?.rotation_priority || 0}</p>
+          <p className="text-text-secondary text-xs mt-2 text-center">
+            Higher number means you have less priority for the next rotation.
           </p>
         </div>
 

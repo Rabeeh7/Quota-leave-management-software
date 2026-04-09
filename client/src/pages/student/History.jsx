@@ -66,19 +66,18 @@ const History = () => {
         <div className="space-y-3">
           {data?.requests?.length === 0 ? (
             <div className="text-center py-12">
-              <span className="text-4xl block mb-2">📜</span>
               <p className="text-text-muted">No leave history found</p>
             </div>
           ) : (
             data?.requests?.map(r => (
               <div key={r._id} className="glass-card p-4 flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0 ${
-                  r.status === 'approved' ? 'bg-success/10' :
-                  r.status === 'denied' ? 'bg-danger/10' :
-                  r.status === 'released' ? 'bg-neutral/10' :
-                  'bg-warning/10'
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold uppercase flex-shrink-0 ${
+                  r.status === 'approved' ? 'bg-success/10 text-success' :
+                  r.status === 'denied' ? 'bg-danger/10 text-danger' :
+                  r.status === 'released' ? 'bg-neutral/10 text-neutral' :
+                  'bg-warning/10 text-warning'
                 }`}>
-                  {r.status === 'approved' ? '✅' : r.status === 'denied' ? '❌' : r.status === 'released' ? '🔓' : '⏳'}
+                  {r.status === 'approved' ? 'OK' : r.status === 'denied' ? 'NO' : r.status === 'released' ? 'REL' : 'PND'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white text-sm font-medium">

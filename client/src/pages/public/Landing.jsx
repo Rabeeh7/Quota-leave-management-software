@@ -48,9 +48,9 @@ const Landing = () => {
       <nav className="relative z-10 max-w-6xl mx-auto px-4 py-5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-accent-light flex items-center justify-center">
-            <span className="text-white font-bold text-lg">F</span>
+            <span className="text-white font-bold text-lg">Q</span>
           </div>
-          <span className="font-heading font-bold text-xl text-white">FairLeave</span>
+          <span className="font-heading font-bold text-xl text-white">Quota Manager</span>
         </div>
         <Link to="/login" className="btn-secondary text-sm !px-5 !py-2.5">
           Login →
@@ -61,21 +61,21 @@ const Landing = () => {
       <section className="relative z-10 max-w-6xl mx-auto px-4 pt-16 pb-20 text-center">
         <div className="inline-block mb-6">
           <span className="text-xs font-semibold tracking-widest uppercase text-accent bg-accent/10 px-4 py-1.5 rounded-full border border-accent/20">
-            Fair Quota Management
+            Rotation Quota Management
           </span>
         </div>
         <h1 className="font-heading text-4xl md:text-6xl font-extrabold text-white leading-tight mb-6">
-          Fair Friday leaves
+          Managed Friday leaves
           <br />
           <span className="text-gradient">for every student.</span>
         </h1>
         <p className="text-text-secondary text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
           An intelligent quota-based leave management system that ensures every 
-          student gets equal opportunity for Friday leaves. Powered by fairness algorithms.
+          student gets optimal opportunity for Friday leaves. Powered by rotation algorithms.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button onClick={() => setShowForm(true)} className="btn-primary text-lg !px-8 !py-4">
-            Request FairLeave →
+            Request Quota Manager ->
           </button>
           <Link to="/login" className="btn-secondary text-lg !px-8 !py-4">
             Login to Dashboard
@@ -94,12 +94,12 @@ const Landing = () => {
         </div>
         <div className="grid md:grid-cols-3 gap-6">
           {[
-            { icon: '🎯', title: 'Fairness Algorithm', desc: 'Smart scoring system ensures students who haven\'t had recent leaves get priority next time.' },
-            { icon: '📅', title: 'Smart Calendar', desc: 'Auto-detects holidays, exam periods, and breaks. Calculates fair averages automatically.' },
-            { icon: '📊', title: 'Full Transparency', desc: 'Students see their queue position, confidence level, and complete leave history.' },
+            { icon: 'R', title: 'Rotation Algorithm', desc: 'Smart scoring system ensures students who haven\'t had recent leaves get priority next time.' },
+            { icon: 'C', title: 'Smart Calendar', desc: 'Auto-detects holidays, exam periods, and breaks. Calculates fair averages automatically.' },
+            { icon: 'T', title: 'Full Transparency', desc: 'Students see their queue position, confidence level, and complete leave history.' },
           ].map((f, i) => (
             <div key={i} className="glass-card-hover p-6 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4 font-bold text-accent">
                 <span className="text-2xl">{f.icon}</span>
               </div>
               <span className="text-xs text-accent font-semibold">STEP 0{i + 1}</span>
@@ -116,14 +116,13 @@ const Landing = () => {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowForm(false)} />
           <div className="relative max-w-lg w-full bg-card border border-border-subtle rounded-2xl shadow-xl animate-slide-up max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-border-subtle flex justify-between items-center">
-              <h2 className="font-heading text-xl text-white">Request FairLeave</h2>
-              <button onClick={() => setShowForm(false)} className="text-text-muted hover:text-white text-xl">✕</button>
+              <h2 className="font-heading text-xl text-white">Request Quota Manager</h2>
+              <button onClick={() => setShowForm(false)} className="text-text-muted hover:text-white text-xl">x</button>
             </div>
             
             {submitted ? (
               <div className="p-8 text-center">
-                <span className="text-5xl block mb-4">✅</span>
-                <h3 className="font-heading text-xl text-white mb-2">Request Submitted!</h3>
+                <h3 className="font-heading text-xl text-white mb-2 pt-4">Request Submitted!</h3>
                 <p className="text-text-secondary mb-6">Super Admin will review your request.</p>
                 
                 {/* Check status section */}
@@ -210,10 +209,9 @@ const Landing = () => {
         </div>
       )}
 
-      {/* Footer */}
       <footer className="relative z-10 border-t border-border-subtle mt-16">
         <div className="max-w-6xl mx-auto px-4 py-6 text-center text-text-muted text-sm">
-          © 2026 FairLeave — Fair Friday Leave Management System
+          © 2026 Quota Manager — Reliable Friday Leave Management System
         </div>
       </footer>
     </div>

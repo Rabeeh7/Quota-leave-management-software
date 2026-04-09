@@ -29,9 +29,18 @@ const StudentDashboard = () => {
   };
 
   const handleRelease = async (allocId) => {
-    if (!confirm('Are you sure you want to release this slot?')) return;
+    if (!confirm('Are you sure you want to release this spot? It will be made available for swapping.')) return;
     try {
       await api.put(`/student/allocation/${allocId}/release`);
+      window.location.reload();
+    } catch (err) { alert(err.response?.data?.message || 'Error'); }
+  };
+
+  const handleAcceptSwap = async (allocId, requesterId) => {
+    if (!confirm('Are you sure? This will lock in the swap and they will take your spot.')) return;
+    try {
+      await api.post(`/fairness/swap/accept`, { allocationId: allocId, requesterId });
+      alert("Swap automatically approved!");
       window.location.reload();
     } catch (err) { alert(err.response?.data?.message || 'Error'); }
   };
@@ -41,8 +50,7 @@ const StudentDashboard = () => {
   if (!data?.semester) {
     return (
       <StudentLayout>
-        <div className="text-center py-20">
-          <span className="text-5xl block mb-4">📅</span>
+        <div className="text-center py-20 animate-fade-in">
           <h2 className="font-heading text-xl text-white">No Active Semester</h2>
           <p className="text-text-secondary mt-2">Your department hasn't set up a semester yet.</p>
         </div>
@@ -51,21 +59,20 @@ const StudentDashboard = () => {
   }
 
   const daysLeft = data.nextFriday ? getDaysUntil(data.nextFriday.friday_date) : null;
-  const badgeColor = data.fairnessBadge === 'Behind' ? 'danger' : data.fairnessBadge === 'Ahead' ? 'success' : 'accent';
 
   return (
     <StudentLayout>
       <div className="space-y-5 animate-fade-in">
         {/* Greeting */}
         <div>
-          <h1 className="font-heading text-xl text-white">Hey there! 👋</h1>
+          <h1 className="font-heading text-xl text-white">Hey there!</h1>
           <p className="text-text-secondary text-sm">{data.semester.semester_name}</p>
         </div>
 
         {/* Progress Bar */}
         <div className="glass-card p-4">
           <div className="flex justify-between text-xs text-text-secondary mb-2">
-            <span>Semester Progress</span>
+            <span>Rotation Progress</span>
             <span>{data.progress}%</span>
           </div>
           <div className="w-full h-2 bg-elevated rounded-full overflow-hidden">
@@ -78,60 +85,93 @@ const StudentDashboard = () => {
         {data.isAllocated ? (
           <div className="bg-gradient-to-br from-accent/20 to-accent-light/10 border border-accent/30 rounded-2xl p-5 animate-slide-up">
             <div className="text-center">
-              <span className="text-4xl block mb-2">🎉</span>
-              <h2 className="font-heading text-xl text-white mb-1">You got quota leave!</h2>
-              <p className="text-accent font-semibold">{formatDate(data.nextFriday?.friday_date)}</p>
+              <h2 className="font-heading text-xs uppercase tracking-widest text-white mb-2">My Next Quota Date</h2>
+              <p className="text-4xl font-black text-accent">{formatDate(data.nextFriday?.friday_date)}</p>
               {daysLeft > 0 && (
-                <p className="text-text-secondary text-sm mt-1">{daysLeft} days away</p>
+                <p className="text-text-secondary text-sm mt-2">{daysLeft} days away</p>
               )}
             </div>
-            <div className="flex gap-3 mt-5">
-              {!data.allocation?.confirmed ? (
-                <>
-                  <button onClick={() => handleConfirm(data.allocation._id)} className="btn-primary flex-1">
-                    ✅ Confirm
-                  </button>
-                  <button onClick={() => handleRelease(data.allocation._id)} className="btn-danger flex-1">
-                    ❌ Not Going
-                  </button>
-                </>
-              ) : (
-                <div className="w-full text-center py-3 bg-success/10 rounded-xl border border-success/20">
-                  <p className="text-success font-semibold">✅ Confirmed</p>
-                </div>
-              )}
-            </div>
+            
+            {data.allocation?.status === 'allocated' && (
+              <div className="flex gap-3 mt-5">
+                <button onClick={() => handleConfirm(data.allocation._id)} className="btn-primary flex-1 py-3 text-lg font-semibold">
+                  Accept Spot
+                </button>
+                <button onClick={() => handleRelease(data.allocation._id)} className="btn-danger flex-1 py-3 font-semibold">
+                  Reject Spot
+                </button>
+              </div>
+            )}
+
+            {data.allocation?.status === 'confirmed' && (
+              <div className="mt-5 text-center py-3 bg-success/10 rounded-xl border border-success/20">
+                <p className="text-success font-semibold">Spot Confirmed</p>
+              </div>
+            )}
+
+            {data.allocation?.status === 'spot_available' && (
+              <div className="mt-6 border-t border-accent/20 pt-4">
+                <p className="text-sm text-text-secondary mb-3">You rejected this spot. It is available for swaps.</p>
+                {data.allocation.swap_requests && data.allocation.swap_requests.length > 0 ? (
+                  <div className="space-y-3">
+                    <p className="font-semibold text-white">Incoming Swap Requests:</p>
+                    {data.allocation.swap_requests.map((reqUser) => (
+                      <div key={reqUser._id} className="flex items-center justify-between bg-elevated border border-border/50 p-3 rounded-lg">
+                        <div>
+                          <p className="text-white text-sm font-medium">{reqUser.name}</p>
+                          <p className="text-text-muted text-xs">{reqUser.roll_no}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          {reqUser.phone && (
+                            <a href={`https://wa.me/${reqUser.phone}`} target="_blank" rel="noreferrer" className="btn-secondary text-xs px-3">
+                              WhatsApp
+                            </a>
+                          )}
+                          <button onClick={() => handleAcceptSwap(data.allocation._id, reqUser._id)} className="bg-success text-white px-3 py-1 text-xs rounded-lg font-medium hover:bg-success/80">
+                            Accept
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-text-muted">No one has requested your spot yet.</p>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <div className="glass-card p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-text-secondary text-sm">My Leaves</p>
-                <p className="text-3xl font-bold tabular-nums text-white">
-                  {data.profile?.total_leaves ?? 0}
-                </p>
-                <p className="text-text-muted text-xs mt-1">
-                  Class average: {data.classAverage}
-                </p>
-              </div>
-              <div className="text-right">
-                <Badge type={badgeColor}>{data.fairnessBadge}</Badge>
-                {data.prediction && (
-                  <p className="text-text-secondary text-xs mt-2">
-                    Queue: #{data.prediction.position}/{data.prediction.total_students}
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-between items-center border-b border-border-subtle pb-4">
+                <div>
+                  <p className="text-text-secondary text-sm">Quota Used</p>
+                  <p className="text-3xl font-bold tabular-nums text-white">
+                    {data.profile?.total_leaves ?? 0}
                   </p>
-                )}
+                </div>
+                <div className="text-right">
+                  <p className="text-text-secondary text-sm">Queue Position</p>
+                  <p className="text-lg font-semibold text-white">
+                    {data.prediction ? `#${data.prediction.position}` : 'N/A'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center text-sm pt-2">
+                <span className="text-text-secondary">Class Average Quota</span>
+                <span className="text-white font-medium">{data.classAverage}</span>
               </div>
             </div>
           </div>
         )}
 
-        {/* Next Friday */}
+        {/* Next Friday (if not allocated) */}
         {data.nextFriday && !data.isAllocated && (
           <div className="glass-card p-5">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-text-secondary text-xs">Next Friday</p>
+                <p className="text-text-secondary text-xs">Next Friday Rotation</p>
                 <p className="text-white font-semibold">{formatDate(data.nextFriday.friday_date)}</p>
               </div>
               <Badge type={data.nextFriday.status === 'open' ? 'success' : 'warning'}>
@@ -157,7 +197,7 @@ const StudentDashboard = () => {
               ) : (
                 <>
                   <button onClick={() => navigate('/student/request')} className="btn-primary flex-1">
-                    ✋ Request Leave
+                    Request Leave
                   </button>
                 </>
               )}
@@ -168,7 +208,7 @@ const StudentDashboard = () => {
         {/* Notifications */}
         {data.notifications?.length > 0 && (
           <div className="glass-card p-5">
-            <h3 className="font-heading text-white text-sm mb-3">Recent Notifications</h3>
+            <h3 className="font-heading text-white text-sm mb-3">System Updates</h3>
             <div className="space-y-2">
               {data.notifications.map(n => (
                 <div key={n._id} className={`p-3 rounded-xl text-sm ${n.read ? 'bg-elevated' : 'bg-accent/5 border border-accent/10'}`}>

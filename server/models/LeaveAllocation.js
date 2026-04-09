@@ -9,9 +9,9 @@ const leaveAllocationSchema = new mongoose.Schema({
     enum: ['auto', 'manual', 'emergency', 'swap'], 
     default: 'auto' 
   },
-  confirmed: { type: Boolean, default: false },
-  released: { type: Boolean, default: false },
-  fairness_debt: { type: Number, default: 0 },
+  status: { type: String, enum: ['allocated', 'confirmed', 'spot_available', 'swapped'], default: 'allocated' },
+  swap_requests: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  rotation_debt: { type: Number, default: 0 },
   created_at: { type: Date, default: Date.now }
 });
 

@@ -8,21 +8,23 @@ const { generateToken } = require('../utils/helpers');
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
-    const { email, roll_no, password } = req.body;
+    const { username, password } = req.body;
 
     if (!password) {
       return res.status(400).json({ message: 'Password is required' });
     }
 
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required' });
+    }
+
     let user;
 
     // Login by email (leader, superadmin) or roll_no (student)
-    if (email) {
-      user = await User.findOne({ email: email.toLowerCase() });
-    } else if (roll_no) {
-      user = await User.findOne({ roll_no });
+    if (username.includes('@')) {
+      user = await User.findOne({ email: username.toLowerCase() });
     } else {
-      return res.status(400).json({ message: 'Email or roll number is required' });
+      user = await User.findOne({ roll_no: username });
     }
 
     if (!user) {

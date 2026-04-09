@@ -42,7 +42,7 @@ const Reports = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="font-heading text-2xl font-bold text-white">Fairness Reports</h1>
+        <h1 className="font-heading text-2xl font-bold text-white">Rotation Reports</h1>
         <p className="text-text-secondary mt-1">Class average: {report.average} leaves per student</p>
       </div>
 
@@ -65,7 +65,7 @@ const Reports = () => {
 
         {/* Risk Distribution */}
         <div className="glass-card p-5">
-          <h3 className="font-heading text-white mb-4">Fairness Distribution</h3>
+          <h3 className="font-heading text-white mb-4">Rotation Distribution</h3>
           <div className="h-64 flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>

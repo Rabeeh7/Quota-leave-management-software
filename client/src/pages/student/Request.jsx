@@ -64,7 +64,6 @@ const Request = () => {
 
         {!friday ? (
           <div className="text-center py-16">
-            <span className="text-5xl block mb-3">📅</span>
             <h2 className="font-heading text-lg text-white">No upcoming Friday</h2>
             <p className="text-text-secondary text-sm mt-2">Check back when a new Friday is available.</p>
           </div>
@@ -86,12 +85,11 @@ const Request = () => {
             {dashData.myRequest ? (
               <div className="glass-card p-5">
                 <div className="text-center mb-4">
-                  <span className="text-4xl block mb-2">✅</span>
-                  <h3 className="font-heading text-white">Request Already Submitted</h3>
+                  <h3 className="font-heading text-white font-bold text-lg">Request Already Submitted</h3>
                   <p className="text-text-secondary text-sm mt-1">Type: {dashData.myRequest.request_type}</p>
-                  <Badge type={dashData.myRequest.status === 'approved' ? 'success' : dashData.myRequest.status === 'denied' ? 'danger' : 'warning'}>
-                    {dashData.myRequest.status}
-                  </Badge>
+                  <div className="mt-2 text-sm font-semibold tracking-wider p-2">
+                    STATUS: {dashData.myRequest.status.toUpperCase()}
+                  </div>
                 </div>
                 {dashData.myRequest.status === 'pending' && (
                   <button onClick={handleCancel} className="btn-danger w-full">Cancel Request</button>
@@ -99,7 +97,6 @@ const Request = () => {
               </div>
             ) : !isOpen ? (
               <div className="glass-card p-5 text-center">
-                <span className="text-4xl block mb-2">🔒</span>
                 <h3 className="font-heading text-white">Requests Closed</h3>
                 <p className="text-text-secondary text-sm mt-1">The deadline has passed for this Friday.</p>
               </div>
@@ -113,10 +110,6 @@ const Request = () => {
                     'bg-danger/5 border-danger/20'
                   }`}>
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl">
-                        {dashData.prediction.confidence === 'high' ? '🟢' :
-                         dashData.prediction.confidence === 'medium' ? '🟡' : '🔴'}
-                      </span>
                       <div>
                         <p className="text-white font-medium text-sm">
                           Confidence: {dashData.prediction.confidence.toUpperCase()}
@@ -155,7 +148,7 @@ const Request = () => {
                 {/* Submit */}
                 <button onClick={handleSubmit} disabled={submitting}
                   className="btn-primary w-full text-lg !py-4">
-                  {submitting ? 'Submitting...' : '✋ Submit Request'}
+                  {submitting ? 'Submitting...' : 'Submit Request'}
                 </button>
               </>
             )}

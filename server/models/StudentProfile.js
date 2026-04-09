@@ -9,7 +9,7 @@ const studentProfileSchema = new mongoose.Schema({
   emergency_count: { type: Number, default: 0 },
   swap_count: { type: Number, default: 0 },
   skipped_turns: { type: Number, default: 0 },
-  fairness_score: { type: Number, default: 0 },
+  rotation_priority: { type: Number, default: 0 },
   created_at: { type: Date, default: Date.now }
 });
 

@@ -92,7 +92,7 @@ const StudentManager = () => {
               <th className="text-left text-text-secondary font-medium p-4">Roll No</th>
               <th className="text-left text-text-secondary font-medium p-4">Phone</th>
               <th className="text-left text-text-secondary font-medium p-4">Leaves</th>
-              <th className="text-left text-text-secondary font-medium p-4">Fairness</th>
+              <th className="text-left text-text-secondary font-medium p-4">Rotation Priority</th>
               <th className="text-left text-text-secondary font-medium p-4">Status</th>
               <th className="text-left text-text-secondary font-medium p-4">Actions</th>
             </tr>
@@ -114,7 +114,7 @@ const StudentManager = () => {
                 <td className="p-4 text-white font-semibold tabular-nums">{s.profile?.total_leaves ?? 0}</td>
                 <td className="p-4">
                   <div className={`w-3 h-3 rounded-full ${
-                    (s.profile?.fairness_score ?? 0) >= 0 ? 'bg-success' : 'bg-danger'
+                    (s.profile?.rotation_priority ?? 0) >= 0 ? 'bg-success' : 'bg-danger'
                   }`} />
                 </td>
                 <td className="p-4">
@@ -198,8 +198,8 @@ const StudentManager = () => {
                 <p className="text-white font-semibold tabular-nums">{showDetail.profile?.swap_count ?? 0}</p>
               </div>
               <div className="bg-elevated p-3 rounded-xl">
-                <p className="text-text-muted text-xs">Fairness Score</p>
-                <p className="text-white font-semibold tabular-nums">{showDetail.profile?.fairness_score ?? 0}</p>
+                <p className="text-text-muted text-xs">Rotation Priority</p>
+                <p className="text-white font-semibold tabular-nums">{showDetail.profile?.rotation_priority ?? 0}</p>
               </div>
             </div>
           </div>

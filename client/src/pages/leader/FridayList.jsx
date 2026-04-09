@@ -101,7 +101,7 @@ const FridayListManager = () => {
           {allocations.length === 0 ? (
             <div className="text-center py-10 text-text-muted">
               <p className="text-3xl mb-2">📋</p>
-              <p>No allocations yet. Run the Fairness Engine from the Dashboard.</p>
+              <p>No allocations yet. Run the Rotation Preview from the Dashboard.</p>
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 gap-3">
