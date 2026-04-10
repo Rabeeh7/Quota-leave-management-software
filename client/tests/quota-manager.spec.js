@@ -13,9 +13,16 @@ const LEADER_PASS = process.env.E2E_LEADER_PASSWORD || 'Leader@123';
 const STUDENT_USER = process.env.E2E_STUDENT_USER || 'CS001';
 const STUDENT_PASS = process.env.E2E_STUDENT_PASSWORD || 'CS001';
 
-async function loginViaUi(page, username, password, { expectSuccess = true } = {}) {
+async function loginViaUi(page, identifier, password, { expectSuccess = true } = {}) {
   await page.goto('/login');
-  await page.getByLabel('Username').fill(username);
+  const isEmail = identifier.includes('@');
+  if (isEmail) {
+    await page.getByRole('tab', { name: /Admin \/ Leader/i }).click();
+    await page.getByLabel('Email').fill(identifier);
+  } else {
+    await page.getByRole('tab', { name: /^Student$/i }).click();
+    await page.getByLabel('Username').fill(identifier);
+  }
   await page.getByLabel('Password').fill(password);
   const responsePromise = page.waitForResponse(
     (r) => r.url().includes('/api/auth/login') && r.request().method() === 'POST'

@@ -6,7 +6,10 @@ import { getRolePath } from '../../utils/helpers';
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ username: '', password: '' });
+  const [tab, setTab] = useState('student');
+  const [studentUsername, setStudentUsername] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -16,7 +19,10 @@ const Login = () => {
     setError('');
 
     try {
-      const credentials = { username: formData.username, password: formData.password };
+      const credentials =
+        tab === 'student'
+          ? { username: studentUsername.trim(), password }
+          : { email: adminEmail.trim().toLowerCase(), password };
       const user = await login(credentials);
       navigate(getRolePath(user.role));
     } catch (err) {
@@ -46,19 +52,84 @@ const Login = () => {
         {/* Form */}
         <div className="glass-card p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="login-username" className="block text-sm text-text-secondary mb-1.5">Username</label>
-              <input
-                id="login-username"
-                type="text"
-                required
-                className="input-field"
-                placeholder="Email or Roll Number"
-                autoComplete="username"
-                value={formData.username}
-                onChange={e => setFormData({ ...formData, username: e.target.value })}
-              />
+            <div
+              className="flex rounded-xl bg-elevated p-1 gap-1"
+              role="tablist"
+              aria-label="Account type"
+            >
+              <button
+                type="button"
+                role="tab"
+                id="login-tab-student"
+                aria-selected={tab === 'student'}
+                aria-controls="login-panel-student"
+                onClick={() => { setTab('student'); setError(''); }}
+                className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${
+                  tab === 'student'
+                    ? 'bg-accent text-white shadow-lg'
+                    : 'text-text-secondary hover:text-white'
+                }`}
+              >
+                Student
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="login-tab-admin"
+                aria-selected={tab === 'admin'}
+                aria-controls="login-panel-admin"
+                onClick={() => { setTab('admin'); setError(''); }}
+                className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${
+                  tab === 'admin'
+                    ? 'bg-accent text-white shadow-lg'
+                    : 'text-text-secondary hover:text-white'
+                }`}
+              >
+                Admin / Leader
+              </button>
             </div>
+
+            {tab === 'student' ? (
+              <div
+                id="login-panel-student"
+                role="tabpanel"
+                aria-labelledby="login-tab-student"
+              >
+                <label htmlFor="login-student-username" className="block text-sm text-text-secondary mb-1.5">
+                  Username
+                </label>
+                <input
+                  id="login-student-username"
+                  type="text"
+                  required
+                  className="input-field"
+                  placeholder="Roll number (e.g. CS001)"
+                  autoComplete="username"
+                  value={studentUsername}
+                  onChange={(e) => setStudentUsername(e.target.value)}
+                />
+              </div>
+            ) : (
+              <div
+                id="login-panel-admin"
+                role="tabpanel"
+                aria-labelledby="login-tab-admin"
+              >
+                <label htmlFor="login-admin-email" className="block text-sm text-text-secondary mb-1.5">
+                  Email
+                </label>
+                <input
+                  id="login-admin-email"
+                  type="email"
+                  required
+                  className="input-field"
+                  placeholder="name@institution.edu"
+                  autoComplete="email"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                />
+              </div>
+            )}
 
             <div>
               <label htmlFor="login-password" className="block text-sm text-text-secondary mb-1.5">Password</label>
@@ -69,8 +140,8 @@ const Login = () => {
                 className="input-field"
                 placeholder="Enter password"
                 autoComplete="current-password"
-                value={formData.password}
-                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
 
@@ -95,9 +166,9 @@ const Login = () => {
         <div className="mt-6 glass-card p-4">
           <p className="text-xs text-text-muted mb-2 font-semibold uppercase tracking-wider">Demo Accounts</p>
           <div className="space-y-1.5 text-xs text-text-secondary">
-            <p><strong className="text-white">Super Admin:</strong> superadmin@fairleave.app / SuperAdmin@123</p>
-            <p><strong className="text-white">Admin:</strong> leader@cse.edu / Leader@123</p>
-            <p><strong className="text-white">Student:</strong> CS001 / CS001</p>
+            <p><strong className="text-white">Super Admin:</strong> use <em>Admin / Leader</em> tab — superadmin@fairleave.app / SuperAdmin@123</p>
+            <p><strong className="text-white">Admin:</strong> use <em>Admin / Leader</em> tab — leader@cse.edu / Leader@123</p>
+            <p><strong className="text-white">Student:</strong> use <em>Student</em> tab — CS001 / CS001</p>
           </div>
         </div>
 
