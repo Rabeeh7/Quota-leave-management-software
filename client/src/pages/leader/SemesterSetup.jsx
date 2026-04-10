@@ -17,6 +17,7 @@ const SemesterSetup = () => {
   });
   const [examPeriods, setExamPeriods] = useState([]);
   const [breakPeriods, setBreakPeriods] = useState([]);
+  const [tempExam, setTempExam] = useState({ start: '', end: '' });
   const [tempBreak, setTempBreak] = useState({ start: '', end: '' });
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState(null);
@@ -38,7 +39,6 @@ const SemesterSetup = () => {
     } finally { setLoading(false); }
   };
 
-  // Calculate preview stats
   const calcFridays = () => {
     if (!formData.start_date || !formData.end_date) return null;
     const start = new Date(formData.start_date);
@@ -176,8 +176,6 @@ const SemesterSetup = () => {
               <button type="button" onClick={() => setBreakPeriods(breakPeriods.filter((_, j) => j !== i))} className="text-danger text-sm">✕</button>
             </div>
           ))}
-        </div>
-
         </div>
 
         <button type="submit" disabled={loading} className="btn-primary w-full text-lg !py-4">
