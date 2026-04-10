@@ -36,7 +36,7 @@ const seed = async () => {
     console.log('👑 Creating Super Admin...');
     const superadmin = await User.create({
       name: 'Super Admin',
-      email: 'superadmin@quotamanager.app',
+      email: 'superadmin@fairleave.app',
       password: 'SuperAdmin@123',
       role: 'superadmin',
       phone: '+919876543210'
@@ -155,7 +155,7 @@ const seed = async () => {
     console.log('\n✅ Seed complete!\n');
     console.log('📋 Login Credentials:');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('Super Admin: superadmin@quotamanager.app / SuperAdmin@123');
+    console.log('Super Admin: superadmin@fairleave.app / SuperAdmin@123');
     console.log('Admin:       leader@cse.edu / Leader@123');
     console.log('Students:    CS001/CS001, CS002/CS002, CS003/CS003, CS004/CS004, CS005/CS005');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

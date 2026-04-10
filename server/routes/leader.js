@@ -400,61 +400,78 @@ router.put('/students/:id', async (req, res) => {
 
 // ============ DASHBOARD ============
 
+async function buildLeaderDashboard(department_id, semesterId) {
+  const semester = await Semester.findById(semesterId);
+  if (!semester || semester.department_id.toString() !== department_id.toString()) {
+    return null;
+  }
+
+  const totalStudents = await User.countDocuments({
+    department_id, role: 'student', is_active: true
+  });
+
+  const now = new Date();
+  const currentFriday = await FridayCalendar.findOne({
+    semester_id: semesterId,
+    friday_date: { $gte: now },
+    status: { $in: ['open', 'locked'] }
+  }).sort({ friday_date: 1 });
+
+  let pendingRequests = 0;
+  let allocations = [];
+  if (currentFriday) {
+    pendingRequests = await LeaveRequest.countDocuments({
+      friday_id: currentFriday._id, status: 'pending'
+    });
+    allocations = await LeaveAllocation.find({
+      friday_id: currentFriday._id, released: false
+    }).populate('student_id', 'name roll_no phone');
+  }
+
+  const profiles = await StudentProfile.find({
+    department_id, semester_id: semesterId
+  });
+  const totalLeaves = profiles.reduce((sum, p) => sum + p.total_leaves, 0);
+  const avg = profiles.length > 0 ? totalLeaves / profiles.length : 0;
+  const riskCount = profiles.filter(p => (avg - p.total_leaves) >= 2).length;
+
+  const warnings = await generateWarnings(department_id, semesterId);
+  const stats = await getCalendarStats(semesterId, totalStudents);
+
+  return {
+    totalStudents,
+    currentFriday,
+    pendingRequests,
+    allocations,
+    riskCount,
+    warnings,
+    stats,
+    semester
+  };
+}
+
+// GET /api/leader/dashboard — uses active semester (alias for clients/tests)
+router.get('/dashboard', async (req, res) => {
+  try {
+    const department_id = req.user.department_id;
+    const semester = await Semester.findOne({ department_id, is_active: true });
+    if (!semester) return res.status(404).json({ message: 'No active semester' });
+
+    const payload = await buildLeaderDashboard(department_id, semester._id);
+    if (!payload) return res.status(404).json({ message: 'Semester not found' });
+    res.json(payload);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // GET /api/leader/dashboard/:semesterId
 router.get('/dashboard/:semesterId', async (req, res) => {
   try {
     const department_id = req.user.department_id;
-    const semesterId = req.params.semesterId;
-
-    const semester = await Semester.findById(semesterId);
-    if (!semester) return res.status(404).json({ message: 'Semester not found' });
-
-    const totalStudents = await User.countDocuments({ 
-      department_id, role: 'student', is_active: true 
-    });
-
-    // Find current/next Friday
-    const now = new Date();
-    const currentFriday = await FridayCalendar.findOne({
-      semester_id: semesterId,
-      friday_date: { $gte: now },
-      status: { $in: ['open', 'locked'] }
-    }).sort({ friday_date: 1 });
-
-    let pendingRequests = 0;
-    let allocations = [];
-    if (currentFriday) {
-      pendingRequests = await LeaveRequest.countDocuments({ 
-        friday_id: currentFriday._id, status: 'pending' 
-      });
-      allocations = await LeaveAllocation.find({ 
-        friday_id: currentFriday._id, released: false 
-      }).populate('student_id', 'name roll_no phone');
-    }
-
-    // Get rotation risk count
-    const profiles = await StudentProfile.find({ 
-      department_id, semester_id: semesterId 
-    });
-    const totalLeaves = profiles.reduce((sum, p) => sum + p.total_leaves, 0);
-    const avg = profiles.length > 0 ? totalLeaves / profiles.length : 0;
-    const riskCount = profiles.filter(p => (avg - p.total_leaves) >= 2).length;
-
-    // Get warnings
-    const warnings = await generateWarnings(department_id, semesterId);
-
-    const stats = await getCalendarStats(semesterId, totalStudents);
-
-    res.json({
-      totalStudents,
-      currentFriday,
-      pendingRequests,
-      allocations,
-      riskCount,
-      warnings,
-      stats,
-      semester
-    });
+    const payload = await buildLeaderDashboard(department_id, req.params.semesterId);
+    if (!payload) return res.status(404).json({ message: 'Semester not found' });
+    res.json(payload);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

@@ -50,7 +50,7 @@ export const getRolePath = (role) => {
   switch (role) {
     case 'superadmin': return '/superadmin/dashboard';
     case 'leader': return '/leader/dashboard';
-    case 'student': return '/student/dashboard';
+    case 'student': return '/student/home';
     default: return '/login';
   }
 };

@@ -32,7 +32,7 @@ const Request = () => {
         reason
       });
       alert('Request submitted successfully!');
-      window.location.href = '/student/dashboard';
+      window.location.href = '/student/home';
     } catch (err) {
       alert(err.response?.data?.message || 'Error submitting request');
     } finally { setSubmitting(false); }

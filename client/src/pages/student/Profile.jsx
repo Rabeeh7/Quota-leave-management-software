@@ -45,8 +45,8 @@ const Profile = () => {
           <div className="w-20 h-20 rounded-full bg-gradient-to-br from-accent to-accent-light flex items-center justify-center mx-auto mb-3">
             <span className="text-white font-bold text-2xl">{user?.name?.charAt(0)?.toUpperCase()}</span>
           </div>
-          <h1 className="font-heading text-xl text-white">{user?.name}</h1>
-          <p className="text-text-secondary text-sm">{user?.roll_no}</p>
+          <h1 className="font-heading text-xl text-white" data-testid="profile-name">{user?.name}</h1>
+          <p className="text-text-secondary text-sm" data-testid="profile-roll">{user?.roll_no}</p>
           <p className="text-text-muted text-xs mt-1">{user?.phone}</p>
         </div>
 

@@ -17,8 +17,12 @@ app.use(cors({
     // allow requests with no origin (e.g. mobile apps, curl)
     if (!origin) return callback(null, true);
     
-    // allow any vercel.app deploy and localhost
-    if (origin.endsWith('vercel.app') || origin.includes('localhost')) {
+    // allow any vercel.app deploy, localhost, and loopback (Playwright / local preview)
+    if (
+      origin.endsWith('vercel.app') ||
+      origin.includes('localhost') ||
+      /127\.0\.0\.1/.test(origin)
+    ) {
       return callback(null, true);
     }
     

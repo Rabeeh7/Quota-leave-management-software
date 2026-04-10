@@ -47,31 +47,35 @@ const Login = () => {
         <div className="glass-card p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm text-text-secondary mb-1.5">Username</label>
+              <label htmlFor="login-username" className="block text-sm text-text-secondary mb-1.5">Username</label>
               <input
+                id="login-username"
                 type="text"
                 required
                 className="input-field"
                 placeholder="Email or Roll Number"
+                autoComplete="username"
                 value={formData.username}
                 onChange={e => setFormData({ ...formData, username: e.target.value })}
               />
             </div>
 
             <div>
-              <label className="block text-sm text-text-secondary mb-1.5">Password</label>
+              <label htmlFor="login-password" className="block text-sm text-text-secondary mb-1.5">Password</label>
               <input
+                id="login-password"
                 type="password"
                 required
                 className="input-field"
                 placeholder="Enter password"
+                autoComplete="current-password"
                 value={formData.password}
                 onChange={e => setFormData({ ...formData, password: e.target.value })}
               />
             </div>
 
             {error && (
-              <div className="bg-danger/10 border border-danger/20 text-danger text-sm p-3 rounded-xl">
+              <div role="alert" data-testid="login-error" className="bg-danger/10 border border-danger/20 text-danger text-sm p-3 rounded-xl">
                 {error}
               </div>
             )}
@@ -91,7 +95,7 @@ const Login = () => {
         <div className="mt-6 glass-card p-4">
           <p className="text-xs text-text-muted mb-2 font-semibold uppercase tracking-wider">Demo Accounts</p>
           <div className="space-y-1.5 text-xs text-text-secondary">
-            <p><strong className="text-white">Super Admin:</strong> superadmin@quotamanager.app / SuperAdmin@123</p>
+            <p><strong className="text-white">Super Admin:</strong> superadmin@fairleave.app / SuperAdmin@123</p>
             <p><strong className="text-white">Admin:</strong> leader@cse.edu / Leader@123</p>
             <p><strong className="text-white">Student:</strong> CS001 / CS001</p>
           </div>

@@ -15,6 +15,8 @@ const superadminLinks = [
 const leaderLinks = [
   { to: '/leader/dashboard', label: 'Dashboard' },
   { to: '/leader/students', label: 'Students' },
+  { to: '/leader/setup', label: 'Semester Setup' },
+  { to: '/leader/friday-list', label: 'Friday List' },
   { to: '/leader/reports', label: 'Reports' },
 ];
 

@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { useAuth } from '../../contexts/useAuth';
 
 const SemesterSetup = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     semester_name: '',
     start_date: '',
@@ -20,20 +22,22 @@ const SemesterSetup = () => {
   const [tempExam, setTempExam] = useState({ start: '', end: '' });
   const [tempBreak, setTempBreak] = useState({ start: '', end: '' });
   const [loading, setLoading] = useState(false);
-  const [, setPreview] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await api.post('/superadmin/semester/setup', {
+      const isLeader = user?.role === 'leader';
+      const endpoint = isLeader ? '/leader/semester/setup' : '/superadmin/semester/setup';
+      const payload = {
         ...formData,
         exam_periods: examPeriods,
-        break_periods: breakPeriods
-      });
-      setPreview(res.data);
+        break_periods: breakPeriods,
+        ...(isLeader ? { tour_dates: [], holiday_dates: [] } : {}),
+      };
+      await api.post(endpoint, payload);
       alert('Semester created successfully!');
-      navigate('/superadmin/dashboard');
+      navigate(isLeader ? '/leader/dashboard' : '/superadmin/dashboard');
     } catch (err) {
       alert(err.response?.data?.message || 'Error creating semester');
     } finally { setLoading(false); }

@@ -21,7 +21,7 @@ export const AuthGuard = ({ children, allowedRoles }) => {
     const rolePaths = {
       superadmin: '/superadmin/dashboard',
       leader: '/leader/dashboard',
-      student: '/student/dashboard',
+      student: '/student/home',
     };
     return <Navigate to={rolePaths[user.role] || '/login'} replace />;
   }

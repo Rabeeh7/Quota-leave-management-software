@@ -101,7 +101,9 @@ const StudentDashboard = () => {
         </div>
 
         {/* Hero Card — MY NEXT QUOTA DATE */}
-        <div className={`rounded-2xl p-5 animate-slide-up ${
+        <div
+          data-testid="next-quota-card"
+          className={`rounded-2xl p-5 animate-slide-up ${
           data.isAllocated 
             ? 'bg-gradient-to-br from-accent/20 to-accent-light/10 border border-accent/30' 
             : 'glass-card'
@@ -124,10 +126,10 @@ const StudentDashboard = () => {
           {/* Accept / Reject buttons when allocated this Friday */}
           {data.allocation?.status === 'allocated' && (
             <div className="flex gap-3 mt-5">
-              <button onClick={() => handleConfirm(data.allocation._id)} className="btn-primary flex-1 py-3 text-lg font-semibold">
+              <button data-testid="accept-spot" onClick={() => handleConfirm(data.allocation._id)} className="btn-primary flex-1 py-3 text-lg font-semibold">
                 Accept Spot
               </button>
-              <button onClick={() => handleRelease(data.allocation._id)} className="btn-danger flex-1 py-3 font-semibold">
+              <button data-testid="reject-spot" onClick={() => handleRelease(data.allocation._id)} className="btn-danger flex-1 py-3 font-semibold">
                 Reject Spot
               </button>
             </div>

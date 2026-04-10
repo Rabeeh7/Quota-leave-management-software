@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/useAuth';
 
 const studentLinks = [
-  { to: '/student/dashboard', label: 'Home' },
+  { to: '/student/home', label: 'Home' },
   { to: '/student/leaderboard', label: 'Leaderboard' },
   { to: '/student/request', label: 'Request' },
   { to: '/student/history', label: 'History' },

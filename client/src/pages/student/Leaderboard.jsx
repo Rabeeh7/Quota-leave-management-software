@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react';
-import { PageLoader } from '../../components/common';
+import { PageLoader, Modal } from '../../components/common';
 import StudentLayout from '../../components/layout/StudentLayout';
 import api from '../../services/api';
 import { formatDate } from '../../utils/helpers';
 import { useAuth } from '../../contexts/useAuth';
 
+const sameId = (a, b) => String(a) === String(b);
+
 const Leaderboard = () => {
   const [data, setData] = useState({ friday: null, students: [] });
   const [loading, setLoading] = useState(true);
+  const [swapModal, setSwapModal] = useState(null);
+  const [myNextQuotaDate, setMyNextQuotaDate] = useState(null);
   const { user } = useAuth();
-  
+
   useEffect(() => {
     const fetch = async () => {
       try {
@@ -21,11 +25,28 @@ const Leaderboard = () => {
     fetch();
   }, []);
 
-  const handleRequestSwap = async (allocationId) => {
-    if (!confirm('Request to swap with this student?')) return;
+  useEffect(() => {
+    if (!swapModal) {
+      setMyNextQuotaDate(null);
+      return;
+    }
+    let cancelled = false;
+    api.get('/student/next-date')
+      .then((res) => {
+        if (!cancelled) setMyNextQuotaDate(res.data?.nextQuotaDate ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setMyNextQuotaDate(null);
+      });
+    return () => { cancelled = true; };
+  }, [swapModal]);
+
+  const confirmSwapRequest = async () => {
+    if (!swapModal?.allocationId) return;
     try {
-      await api.post(`/rotation/swap/request`, { allocationId });
+      await api.post('/rotation/swap/request', { allocationId: swapModal.allocationId });
       alert('Swap requested successfully! They will be notified.');
+      setSwapModal(null);
       window.location.reload();
     } catch (err) {
       alert(err.response?.data?.message || 'Error requesting swap');
@@ -41,9 +62,11 @@ const Leaderboard = () => {
 
   if (loading) return <StudentLayout><PageLoader /></StudentLayout>;
 
-  // Check if current user is allocated
-  const myAllocation = data.students.find(s => s._id === user?._id);
+  const myAllocation = data.students.find(s => sameId(s._id, user?._id));
   const amIAllocated = myAllocation?.status === 'allocated';
+
+  const classFridayLabel = data.friday?.date ? formatDate(data.friday.date) : '—';
+  const myNextLabel = myNextQuotaDate ? formatDate(myNextQuotaDate) : 'TBD';
 
   return (
     <StudentLayout>
@@ -61,30 +84,50 @@ const Leaderboard = () => {
           </div>
         )}
 
+        <Modal
+          isOpen={!!swapModal}
+          onClose={() => setSwapModal(null)}
+          title="Request swap"
+        >
+          <div data-testid="swap-modal" className="space-y-4 text-sm text-text-secondary">
+            <p>
+              You are requesting to swap for <span className="text-white font-medium">{swapModal?.peerName}</span>&apos;s available spot.
+            </p>
+            <div className="glass-card p-3 rounded-xl space-y-2">
+              <p data-testid="swap-modal-class-friday">
+                <span className="text-text-muted">Class Friday (this rotation): </span>
+                <span className="text-white font-medium">{classFridayLabel}</span>
+              </p>
+              <p data-testid="swap-modal-my-next">
+                <span className="text-text-muted">Your next quota date: </span>
+                <span className="text-white font-medium">{myNextLabel}</span>
+              </p>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button type="button" className="btn-secondary flex-1" onClick={() => setSwapModal(null)}>Cancel</button>
+              <button type="button" className="btn-primary flex-1" onClick={confirmSwapRequest}>Confirm request</button>
+            </div>
+          </div>
+        </Modal>
+
         <div className="space-y-3">
           {data.students.map((student, i) => {
-            const isMe = student._id === user?._id;
-            
-            // Color-coded cards
-            let cardClasses = "p-4 rounded-2xl border transition-all ";
-            
+            const isMe = sameId(student._id, user?._id);
+
+            let cardClasses = 'p-4 rounded-2xl border transition-all ';
+
             if (student.status === 'allocated') {
-              // Green — got quota
-              cardClasses += "bg-success/5 border-success/20 ";
+              cardClasses += 'bg-success/5 border-success/20 ';
             } else if (student.status === 'available') {
-              // Amber — spot available for swap
-              cardClasses += "bg-warning/10 border-warning/30 ";
+              cardClasses += 'bg-warning/10 border-warning/30 ';
             } else {
-              // Grey — not this week
-              cardClasses += "bg-elevated border-border-subtle opacity-75 ";
+              cardClasses += 'bg-elevated border-border-subtle opacity-75 ';
             }
 
-            // Blue border for logged-in user
             if (isMe) {
-              cardClasses += "!border-2 !border-accent !opacity-100 ";
+              cardClasses += '!border-2 !border-accent !opacity-100 ';
             }
 
-            // Status badges
             let badgeComponent = null;
             if (student.status === 'allocated') {
               badgeComponent = (
@@ -106,14 +149,13 @@ const Leaderboard = () => {
               );
             }
 
-            // Can request swap: spot is available AND I'm not allocated AND it's not me
             const canRequestSwap = student.status === 'available' && !isMe && !amIAllocated;
-            const whatsappLink = student.status === 'available' && !isMe 
-              ? generateWhatsAppLink(student.phone, student.name) 
+            const whatsappLink = student.status === 'available' && !isMe
+              ? generateWhatsAppLink(student.phone, student.name)
               : null;
 
             return (
-              <div key={student._id} className={cardClasses}>
+              <div key={student._id} className={cardClasses} data-testid={isMe ? 'leaderboard-row-me' : 'leaderboard-row'}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
@@ -136,19 +178,19 @@ const Leaderboard = () => {
                   </div>
                 </div>
 
-                {/* Swap action area */}
                 {(canRequestSwap || whatsappLink) && (
                   <div className="flex gap-2 mt-3 pt-3 border-t border-border-subtle/50">
                     {canRequestSwap && (
-                      <button 
-                        onClick={() => handleRequestSwap(student.allocation_id)}
+                      <button
+                        type="button"
+                        onClick={() => setSwapModal({ allocationId: student.allocation_id, peerName: student.name })}
                         className="bg-accent text-white text-xs px-4 py-2 rounded-lg hover:bg-accent/80 transition-colors flex-1 font-medium"
                       >
                         Request Swap
                       </button>
                     )}
                     {whatsappLink && (
-                      <a href={whatsappLink} target="_blank" rel="noreferrer" 
+                      <a href={whatsappLink} target="_blank" rel="noreferrer"
                         className="bg-green-600 text-white text-xs px-4 py-2 rounded-lg hover:bg-green-500 transition-colors text-center font-medium">
                         WhatsApp
                       </a>
@@ -158,7 +200,7 @@ const Leaderboard = () => {
               </div>
             );
           })}
-          
+
           {data.students.length === 0 && (
             <p className="text-center text-text-muted py-10">No students found.</p>
           )}

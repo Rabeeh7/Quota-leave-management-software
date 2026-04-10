@@ -19,6 +19,7 @@ import BlockedFridays from './pages/leader/BlockedFridays';
 // Leader
 import LeaderDashboard from './pages/leader/Dashboard';
 import Students from './pages/leader/Students';
+import LeaderFridayList from './pages/leader/LeaderFridayList';
 import Reports from './pages/leader/Reports';
 
 // Student
@@ -68,11 +69,21 @@ function App() {
           >
             <Route path="dashboard" element={<LeaderDashboard />} />
             <Route path="students" element={<Students />} />
+            <Route path="setup" element={<SemesterSetup />} />
+            <Route path="friday-list" element={<LeaderFridayList />} />
             <Route path="reports" element={<Reports />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 
           {/* Student — uses its own layout internally */}
+          <Route
+            path="/student/home"
+            element={
+              <AuthGuard allowedRoles={['student']}>
+                <StudentDashboard />
+              </AuthGuard>
+            }
+          />
           <Route
             path="/student/dashboard"
             element={
@@ -113,7 +124,7 @@ function App() {
               </AuthGuard>
             }
           />
-          <Route path="/student" element={<Navigate to="/student/dashboard" replace />} />
+          <Route path="/student" element={<Navigate to="/student/home" replace />} />
 
           {/* Catch all */}
           <Route path="*" element={<Navigate to="/" replace />} />
