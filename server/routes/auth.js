@@ -56,6 +56,13 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    // Support legacy/plain-text records created outside Mongoose by
+    // upgrading them to a hashed password after the first successful login.
+    if (!user.hasHashedPassword()) {
+      user.password = password;
+      await user.save();
+    }
+
     const token = generateToken(user);
 
     res.json({

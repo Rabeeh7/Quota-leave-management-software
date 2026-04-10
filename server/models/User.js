@@ -22,8 +22,18 @@ userSchema.pre('save', async function(next) {
   next();
 });
 
+userSchema.methods.hasHashedPassword = function() {
+  return /^\$2[aby]\$\d{2}\$/.test(this.password);
+};
+
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  if (!this.password) return false;
+
+  if (this.hasHashedPassword()) {
+    return await bcrypt.compare(candidatePassword, this.password);
+  }
+
+  return String(candidatePassword) === String(this.password);
 };
 
 module.exports = mongoose.model('User', userSchema);
