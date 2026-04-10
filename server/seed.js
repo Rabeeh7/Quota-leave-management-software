@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
 
-dotenv.config();
+dotenv.config({ path: './server/.env' });
 
 // Models
 const Department = require('./models/Department');
@@ -36,6 +36,7 @@ const seed = async () => {
     console.log('👑 Creating Super Admin...');
     const superadmin = await User.create({
       name: 'Super Admin',
+      username: 'superadmin@fairleave.app',
       email: 'superadmin@fairleave.app',
       password: 'SuperAdmin@123',
       role: 'superadmin',
@@ -57,6 +58,7 @@ const seed = async () => {
     console.log('👤 Creating Leader...');
     const leader = await User.create({
       name: 'Dr. Rahman',
+      username: 'leader@cse.edu',
       email: 'leader@cse.edu',
       password: 'Leader@123',
       role: 'leader',
@@ -78,6 +80,7 @@ const seed = async () => {
     for (const s of studentData) {
       const student = await User.create({
         name: s.name,
+        username: s.roll_no,
         roll_no: s.roll_no,
         phone: s.phone,
         password: s.roll_no, // password = roll number

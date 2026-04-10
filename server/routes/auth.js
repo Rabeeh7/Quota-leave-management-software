@@ -27,13 +27,20 @@ router.post('/login', async (req, res) => {
 
     let user;
 
-    // Prefer explicit `email` (Admin / Leader tab); else `username` (roll no or legacy email-in-username)
+    // Prefer explicit `email` (Admin / Leader tab)
     if (emailTrim) {
       user = await User.findOne({ email: emailTrim });
-    } else if (usernameTrim.includes('@')) {
-      user = await User.findOne({ email: usernameTrim.toLowerCase() });
     } else {
-      user = await User.findOne({ roll_no: usernameTrim });
+      // For student tab or legacy login, check multiple fields
+      const query = {
+        $or: [
+          { roll_no: usernameTrim },
+          { username: usernameTrim },
+          { email: usernameTrim.toLowerCase() },
+          { name: usernameTrim }
+        ]
+      };
+      user = await User.findOne(query);
     }
 
     if (!user) {

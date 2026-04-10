@@ -246,6 +246,7 @@ router.post('/students/add', async (req, res) => {
 
     const student = await User.create({
       name,
+      username: roll_no,
       roll_no,
       phone,
       password: password || roll_no, // default password is roll_no
@@ -301,6 +302,7 @@ router.post('/students/bulk-import', async (req, res) => {
 
         const student = await User.create({
           name: s.name,
+          username: s.roll_no,
           roll_no: s.roll_no,
           phone: s.phone,
           password: s.password || s.roll_no,

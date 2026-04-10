@@ -151,12 +151,14 @@ router.post('/leaders/appoint', async (req, res) => {
       // Update existing user to leader
       user.role = 'leader';
       user.department_id = department_id;
+      user.username = email.toLowerCase();
       user.is_active = true;
       await user.save();
     } else {
       // Create new user
       user = await User.create({
         name,
+        username: email.toLowerCase(),
         email: email.toLowerCase(),
         password,
         phone,
