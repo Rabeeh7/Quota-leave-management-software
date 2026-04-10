@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth';
 
 const studentLinks = [
   { to: '/student/dashboard', label: 'Home' },
@@ -32,7 +32,7 @@ const StudentBottomNav = () => {
 };
 
 const StudentLayout = ({ children }) => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   return (

@@ -20,7 +20,7 @@ const SemesterSetup = () => {
   const [tempExam, setTempExam] = useState({ start: '', end: '' });
   const [tempBreak, setTempBreak] = useState({ start: '', end: '' });
   const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState(null);
+  const [, setPreview] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

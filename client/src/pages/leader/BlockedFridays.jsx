@@ -57,16 +57,6 @@ const BlockedFridays = () => {
 
   if (loading) return <PageLoader />;
 
-  const getStatusColor = (f) => {
-    if (f.status === 'blocked') {
-      const config = getBlockTypeConfig(f.block_type);
-      return `${config.bg} ${config.color}`;
-    }
-    if (f.status === 'passed') return 'bg-neutral/10 text-neutral';
-    if (f.status === 'published') return 'bg-success/10 text-success';
-    return 'bg-success/10 text-success';
-  };
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

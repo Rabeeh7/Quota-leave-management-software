@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Badge, PageLoader, Modal, EmptyState } from '../../components/common';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth';
 import api from '../../services/api';
 
 const StudentManager = () => {
@@ -23,7 +23,7 @@ const StudentManager = () => {
     }
   }, [user]);
 
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     try {
       setLoading(true);
       if (user?.role === 'superadmin') {
@@ -36,9 +36,9 @@ const StudentManager = () => {
       }
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  };
+  }, [selectedDept, user]);
 
-  useEffect(() => { fetchStudents(); }, [selectedDept, user]);
+  useEffect(() => { void fetchStudents(); }, [fetchStudents]);
 
   const handleAdd = async (e) => {
     e.preventDefault();

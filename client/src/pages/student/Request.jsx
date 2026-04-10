@@ -3,10 +3,8 @@ import { Badge, PageLoader } from '../../components/common';
 import StudentLayout from '../../components/layout/StudentLayout';
 import api from '../../services/api';
 import { formatDate, getDaysUntil } from '../../utils/helpers';
-import { useAuth } from '../../contexts/AuthContext';
 
 const Request = () => {
-  const { user } = useAuth();
   const [dashData, setDashData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [requestType, setRequestType] = useState('normal');

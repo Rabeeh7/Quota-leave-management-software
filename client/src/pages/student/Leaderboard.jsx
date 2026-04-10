@@ -3,7 +3,7 @@ import { PageLoader } from '../../components/common';
 import StudentLayout from '../../components/layout/StudentLayout';
 import api from '../../services/api';
 import { formatDate } from '../../utils/helpers';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth';
 
 const Leaderboard = () => {
   const [data, setData] = useState({ friday: null, students: [] });

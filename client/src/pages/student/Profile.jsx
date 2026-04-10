@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { PageLoader } from '../../components/common';
 import StudentLayout from '../../components/layout/StudentLayout';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth';
 import api from '../../services/api';
 
 const Profile = () => {

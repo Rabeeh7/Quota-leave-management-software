@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Badge, PageLoader, EmptyState } from '../../components/common';
 import api from '../../services/api';
 import { formatDate } from '../../utils/helpers';
@@ -8,21 +8,21 @@ const Requests = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
 
-  const fetch = async () => {
+  const fetchRequests = useCallback(async () => {
     try {
       const url = filter === 'all' ? '/superadmin/requests' : `/superadmin/requests?status=${filter}`;
       const res = await api.get(url);
       setRequests(res.data);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  };
+  }, [filter]);
 
-  useEffect(() => { fetch(); }, [filter]);
+  useEffect(() => { void fetchRequests(); }, [fetchRequests]);
 
   const handleApprove = async (id) => {
     try {
       await api.post(`/superadmin/departments/approve/${id}`);
-      fetch();
+      fetchRequests();
     } catch (err) { alert(err.response?.data?.message || 'Error'); }
   };
 
@@ -30,7 +30,7 @@ const Requests = () => {
     if (!confirm('Reject this request?')) return;
     try {
       await api.post(`/superadmin/departments/reject/${id}`);
-      fetch();
+      fetchRequests();
     } catch (err) { alert(err.response?.data?.message || 'Error'); }
   };
 

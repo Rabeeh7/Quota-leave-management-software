@@ -1,54 +1,55 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
-  return context;
-};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const logout = useCallback(() => {
+    localStorage.removeItem('quota_token');
+    localStorage.removeItem('quota_user');
+    setUser(null);
+  }, []);
+
   useEffect(() => {
     const token = localStorage.getItem('quota_token');
     const savedUser = localStorage.getItem('quota_user');
-    
-    if (token && savedUser) {
-      setUser(JSON.parse(savedUser));
-      // Verify token is still valid
-      api.get('/auth/me')
-        .then(res => {
-          setUser(res.data);
-          localStorage.setItem('quota_user', JSON.stringify(res.data));
-        })
-        .catch(() => {
-          logout();
-        })
-        .finally(() => setLoading(false));
-    } else {
+
+    if (!token || !savedUser) {
       setLoading(false);
+      return;
     }
-  }, []);
+
+    let cancelled = false;
+    const bootstrap = async () => {
+      try {
+        const res = await api.get('/auth/me');
+        if (cancelled) return;
+        setUser(res.data);
+        localStorage.setItem('quota_user', JSON.stringify(res.data));
+      } catch {
+        if (!cancelled) logout();
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void bootstrap();
+    return () => {
+      cancelled = true;
+    };
+  }, [logout]);
 
   const login = async (credentials) => {
     const res = await api.post('/auth/login', credentials);
     const { token, user: userData } = res.data;
-    
+
     localStorage.setItem('quota_token', token);
     localStorage.setItem('quota_user', JSON.stringify(userData));
     setUser(userData);
-    
-    return userData;
-  };
 
-  const logout = () => {
-    localStorage.removeItem('quota_token');
-    localStorage.removeItem('quota_user');
-    setUser(null);
+    return userData;
   };
 
   const value = {

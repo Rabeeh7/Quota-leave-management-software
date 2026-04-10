@@ -46,14 +46,12 @@ const FridayListManager = () => {
     if (!selectedFriday) return;
     const fetchAllocations = async () => {
       try {
-        const res = await api.get(`/superadmin/friday/list/${selectedDept}`);
-        const friday = res.data.find(f => f._id === selectedFriday._id);
         const allocRes = await api.get(`/superadmin/friday/${selectedFriday._id}/allocations`);
         setAllocations(allocRes.data || []);
       } catch (err) { console.error(err); }
     };
     fetchAllocations();
-  }, [selectedFriday]);
+  }, [selectedFriday, selectedDept]);
 
   const handlePublish = async () => {
     if (!selectedFriday) return;
@@ -139,7 +137,7 @@ const FridayListManager = () => {
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 gap-3">
-              {allocations.map((a, i) => (
+              {allocations.map((a) => (
                 <div key={a._id} className="bg-elevated border border-border-subtle rounded-xl p-4 flex items-center gap-3 group hover:border-accent/20 transition-all">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-accent-light flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                     {getInitials(a.student_id?.name)}
