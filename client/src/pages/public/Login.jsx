@@ -51,80 +51,52 @@ const Login = () => {
 
         {/* Form */}
         <div className="glass-card p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div
-              className="flex rounded-xl bg-elevated p-1 gap-1"
-              role="tablist"
-              aria-label="Account type"
+          <div className="flex rounded-xl bg-elevated p-1 gap-1 mb-6">
+            <button
+              type="button"
+              onClick={() => { setTab('student'); setError(''); }}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                tab === 'student'
+                  ? 'bg-accent text-white shadow-lg'
+                  : 'text-text-secondary hover:text-white'
+              }`}
             >
-              <button
-                type="button"
-                role="tab"
-                id="login-tab-student"
-                aria-selected={tab === 'student'}
-                aria-controls="login-panel-student"
-                onClick={() => { setTab('student'); setError(''); }}
-                className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${
-                  tab === 'student'
-                    ? 'bg-accent text-white shadow-lg'
-                    : 'text-text-secondary hover:text-white'
-                }`}
-              >
-                Student
-              </button>
-              <button
-                type="button"
-                role="tab"
-                id="login-tab-admin"
-                aria-selected={tab === 'admin'}
-                aria-controls="login-panel-admin"
-                onClick={() => { setTab('admin'); setError(''); }}
-                className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${
-                  tab === 'admin'
-                    ? 'bg-accent text-white shadow-lg'
-                    : 'text-text-secondary hover:text-white'
-                }`}
-              >
-                Admin / Leader
-              </button>
-            </div>
+              Student
+            </button>
+            <button
+              type="button"
+              onClick={() => { setTab('admin'); setError(''); }}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                tab === 'admin'
+                  ? 'bg-accent text-white shadow-lg'
+                  : 'text-text-secondary hover:text-white'
+              }`}
+            >
+              Admin / Leader
+            </button>
+          </div>
 
+          <form onSubmit={handleSubmit} className="space-y-4">
             {tab === 'student' ? (
-              <div
-                id="login-panel-student"
-                role="tabpanel"
-                aria-labelledby="login-tab-student"
-              >
-                <label htmlFor="login-student-username" className="block text-sm text-text-secondary mb-1.5">
-                  Username
-                </label>
+              <div>
+                <label className="block text-sm text-text-secondary mb-1.5">Username</label>
                 <input
-                  id="login-student-username"
                   type="text"
                   required
                   className="input-field"
                   placeholder="Roll number (e.g. CS001)"
-                  autoComplete="username"
                   value={studentUsername}
                   onChange={(e) => setStudentUsername(e.target.value)}
                 />
               </div>
             ) : (
-              <div
-                id="login-panel-admin"
-                role="tabpanel"
-                aria-labelledby="login-tab-admin"
-              >
-                <label htmlFor="login-admin-email" className="block text-sm text-text-secondary mb-1.5">
-                  Email
-                </label>
+              <div>
+                <label className="block text-sm text-text-secondary mb-1.5">Email</label>
                 <input
-                  id="login-admin-email"
                   type="email"
                   required
                   className="input-field"
                   placeholder="name@institution.edu"
-                  autoComplete="email"
                   value={adminEmail}
                   onChange={(e) => setAdminEmail(e.target.value)}
                 />
@@ -132,32 +104,25 @@ const Login = () => {
             )}
 
             <div>
-              <label htmlFor="login-password" className="block text-sm text-text-secondary mb-1.5">Password</label>
+              <label className="block text-sm text-text-secondary mb-1.5">Password</label>
               <input
-                id="login-password"
                 type="password"
                 required
                 className="input-field"
                 placeholder="Enter password"
-                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
 
             {error && (
-              <div role="alert" data-testid="login-error" className="bg-danger/10 border border-danger/20 text-danger text-sm p-3 rounded-xl">
+              <div className="bg-danger/10 border border-danger/20 text-danger text-sm p-3 rounded-xl">
                 {error}
               </div>
             )}
 
             <button type="submit" disabled={loading} className="btn-primary w-full">
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Signing in...
-                </span>
-              ) : 'Sign In'}
+              {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
         </div>
@@ -166,9 +131,9 @@ const Login = () => {
         <div className="mt-6 glass-card p-4">
           <p className="text-xs text-text-muted mb-2 font-semibold uppercase tracking-wider">Demo Accounts</p>
           <div className="space-y-1.5 text-xs text-text-secondary">
-            <p><strong className="text-white">Super Admin:</strong> use <em>Admin / Leader</em> tab — superadmin@fairleave.app / SuperAdmin@123</p>
-            <p><strong className="text-white">Admin:</strong> use <em>Admin / Leader</em> tab — leader@cse.edu / Leader@123</p>
-            <p><strong className="text-white">Student:</strong> use <em>Student</em> tab — CS001 / CS001</p>
+            <p><strong className="text-white">Super Admin:</strong> use Admin tab — superadmin@quotamanager.app / SuperAdmin@123</p>
+            <p><strong className="text-white">Admin:</strong> use Admin tab — leader@cse.edu / Leader@123</p>
+            <p><strong className="text-white">Student:</strong> use Student tab — CS001 / CS001</p>
           </div>
         </div>
 
