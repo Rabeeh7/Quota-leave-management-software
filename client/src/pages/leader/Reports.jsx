@@ -7,14 +7,19 @@ const COLORS = ['#E84D1A', '#16A34A', '#D97706', '#2563EB'];
 
 const Reports = () => {
   const [report, setReport] = useState(null);
+  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetch = async () => {
       try {
         const semRes = await api.get('/leader/semester/active/current');
-        const res = await api.get(`/rotation/report/${semRes.data.semester._id}`);
-        setReport(res.data);
+        if (semRes.data.semester) {
+          const res = await api.get(`/rotation/report/${semRes.data.semester._id}`);
+          setReport(res.data);
+        }
+        const logsRes = await api.get('/leader/audit-log');
+        setLogs(logsRes.data);
       } catch (err) { console.error(err); }
       finally { setLoading(false); }
     };
@@ -117,6 +122,32 @@ const Reports = () => {
               </div>
             ))}
           </div>
+        </div>
+      )}
+      {/* System-wide Audit Logging */}
+      {logs.length > 0 && (
+        <div className="glass-card overflow-x-auto mt-6">
+          <h3 className="font-heading text-white p-5 border-b border-border-subtle">Audit Logs</h3>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border-subtle bg-elevated/30">
+                <th className="text-left text-text-secondary font-medium p-4">Date</th>
+                <th className="text-left text-text-secondary font-medium p-4">Action</th>
+                <th className="text-left text-text-secondary font-medium p-4">Target Student</th>
+                <th className="text-left text-text-secondary font-medium p-4">Details</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border-subtle">
+              {logs.map(log => (
+                <tr key={log._id} className="hover:bg-white/[0.02]">
+                  <td className="p-4 text-text-muted">{new Date(log.created_at).toLocaleString()}</td>
+                  <td className="p-4 text-white font-medium">{log.action}</td>
+                  <td className="p-4 text-text-secondary">{log.target_student?.name || '—'}</td>
+                  <td className="p-4 text-text-secondary text-xs">{log.details || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

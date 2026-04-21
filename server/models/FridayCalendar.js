@@ -9,6 +9,15 @@ const fridayCalendarSchema = new mongoose.Schema({
     enum: ['open', 'locked', 'published', 'blocked', 'holiday', 'passed'], 
     default: 'open' 
   },
+  stage: { 
+    type: String, 
+    enum: ['upcoming', 'request_open', 'request_closed', 'initial_published', 'swap_open', 'final_published', 'passed'],
+    default: 'upcoming'
+  },
+  request_window_open: { type: Date },
+  request_window_close: { type: Date },
+  swap_window_hours: { type: Number },
+  swap_window_close: { type: Date },
   block_reason: { type: String },
   block_type: { 
     type: String, 

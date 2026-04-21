@@ -254,6 +254,7 @@ router.post('/semester/setup', async (req, res) => {
     const { 
       semester_name, start_date, end_date, 
       max_friday_slots, quota_percentage,
+      request_open_day, request_open_time,
       request_deadline_day, request_deadline_time,
       swap_enabled, emergency_limit,
       exam_periods, break_periods
@@ -273,6 +274,8 @@ router.post('/semester/setup', async (req, res) => {
       total_students,
       max_friday_slots: max_friday_slots || 12,
       quota_percentage: quota_percentage || 33,
+      request_open_day: request_open_day || 'Tuesday',
+      request_open_time: request_open_time || '00:00',
       request_deadline_day: request_deadline_day || 'Wednesday',
       request_deadline_time: request_deadline_time || '09:00',
       swap_enabled: swap_enabled !== false,

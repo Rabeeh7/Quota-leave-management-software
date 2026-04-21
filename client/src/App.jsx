@@ -50,9 +50,6 @@ function App() {
             <Route path="dashboard" element={<SuperAdminDashboard />} />
             <Route path="requests" element={<Requests />} />
             <Route path="appoint-leader" element={<AppointLeader />} />
-            <Route path="setup" element={<SemesterSetup />} />
-            <Route path="friday-list" element={<FridayList />} />
-            <Route path="blocked" element={<BlockedFridays />} />
             <Route path="students" element={<Students />} />
             <Route path="analytics" element={<Analytics />} />
             <Route index element={<Navigate to="dashboard" replace />} />
@@ -71,6 +68,7 @@ function App() {
             <Route path="students" element={<Students />} />
             <Route path="setup" element={<SemesterSetup />} />
             <Route path="friday-list" element={<LeaderFridayList />} />
+            <Route path="blocked" element={<BlockedFridays />} />
             <Route path="reports" element={<Reports />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>

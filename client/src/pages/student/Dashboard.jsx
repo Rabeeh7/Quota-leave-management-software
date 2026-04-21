@@ -7,19 +7,59 @@ import { formatDate, getDaysUntil } from '../../utils/helpers';
 
 const StudentDashboard = () => {
   const [data, setData] = useState(null);
+  const [stageInfo, setStageInfo] = useState(null);
+  const [countdown, setCountdown] = useState('');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await api.get('/student/dashboard');
-        setData(res.data);
+        const [dashRes, stageRes] = await Promise.all([
+          api.get('/student/dashboard'),
+          api.get('/student/current-stage')
+        ]);
+        setData(dashRes.data);
+        setStageInfo(stageRes.data);
       } catch (err) { console.error(err); }
       finally { setLoading(false); }
     };
     fetch();
   }, []);
+
+  useEffect(() => {
+    if (!stageInfo || stageInfo.stage === 'unavailable') return;
+    
+    const interval = setInterval(() => {
+      const now = new Date();
+      let targetDate = null;
+      let prefix = '';
+
+      if (stageInfo.stage === 'upcoming') {
+        targetDate = new Date(stageInfo.request_open);
+        prefix = 'Request window opens in: ';
+      } else if (stageInfo.stage === 'request_open') {
+        targetDate = new Date(stageInfo.request_close);
+        prefix = 'Request window closes in: ';
+      } else if (stageInfo.stage === 'initial_published') {
+        targetDate = new Date(stageInfo.swap_close);
+        prefix = 'Swap window closes in: ';
+      }
+
+      if (targetDate && !isNaN(targetDate) && targetDate > now) {
+        const diff = targetDate - now;
+        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const m = Math.floor((diff / (1000 * 60)) % 60);
+        const s = Math.floor((diff / 1000) % 60);
+        setCountdown(`${prefix} ${d}d ${h}h ${m}m ${s}s`);
+      } else {
+        setCountdown('');
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [stageInfo]);
 
   const handleConfirm = async (allocId) => {
     try {
@@ -73,8 +113,6 @@ const StudentDashboard = () => {
   }
 
   const daysLeft = data.nextFriday ? getDaysUntil(data.nextFriday.friday_date) : null;
-
-  // Get swap requests — prefer detailed, fallback to legacy
   const swapRequests = data.allocation?.swap_request_details?.filter(d => d.status === 'pending') 
     || data.allocation?.swap_requests 
     || [];
@@ -82,11 +120,27 @@ const StudentDashboard = () => {
   return (
     <StudentLayout>
       <div className="space-y-5 animate-fade-in">
-        {/* Greeting */}
         <div>
           <h1 className="font-heading text-xl text-white">Hey there!</h1>
           <p className="text-text-secondary text-sm">{data.semester.semester_name}</p>
         </div>
+
+        {/* Dynamic Countdown Banner */}
+        {countdown && (
+          <div className="glass-card p-4 border border-accent/20 bg-accent/5 flex items-center justify-between">
+            <p className="text-accent font-bold font-mono tracking-wide">{countdown}</p>
+            {stageInfo.stage === 'request_open' && !data.myRequest && (
+              <button onClick={() => navigate('/student/request')} className="btn-primary text-xs !py-1 !px-3 animate-pulse-glow">
+                Submit Request
+              </button>
+            )}
+            {stageInfo.stage === 'initial_published' && (
+              <button onClick={() => navigate('/student/leaderboard')} className="btn-secondary text-xs !py-1 !px-3">
+                View Swaps
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Progress Bar */}
         <div className="glass-card p-4">
@@ -100,13 +154,9 @@ const StudentDashboard = () => {
           </div>
         </div>
 
-        {/* Hero Card — MY NEXT QUOTA DATE */}
-        <div
-          data-testid="next-quota-card"
-          className={`rounded-2xl p-5 animate-slide-up ${
-          data.isAllocated 
-            ? 'bg-gradient-to-br from-accent/20 to-accent-light/10 border border-accent/30' 
-            : 'glass-card'
+        {/* Hero Card */}
+        <div className={`rounded-2xl p-5 animate-slide-up ${
+          data.isAllocated ? 'bg-gradient-to-br from-accent/20 to-accent-light/10 border border-accent/30' : 'glass-card'
         }`}>
           <div className="text-center">
             <h2 className="font-heading text-xs uppercase tracking-widest text-text-secondary mb-2">My Next Quota Date</h2>
@@ -123,14 +173,13 @@ const StudentDashboard = () => {
             )}
           </div>
           
-          {/* Accept / Reject buttons when allocated this Friday */}
           {data.allocation?.status === 'allocated' && (
             <div className="flex gap-3 mt-5">
-              <button data-testid="accept-spot" onClick={() => handleConfirm(data.allocation._id)} className="btn-primary flex-1 py-3 text-lg font-semibold">
+              <button onClick={() => handleConfirm(data.allocation._id)} className="btn-primary flex-1 py-3 text-lg font-semibold">
                 Accept Spot
               </button>
-              <button data-testid="reject-spot" onClick={() => handleRelease(data.allocation._id)} className="btn-danger flex-1 py-3 font-semibold">
-                Reject Spot
+              <button onClick={() => handleRelease(data.allocation._id)} className="btn-danger flex-1 py-3 font-semibold">
+                Reject & Swap
               </button>
             </div>
           )}
@@ -141,7 +190,6 @@ const StudentDashboard = () => {
             </div>
           )}
 
-          {/* Spot available — show swap requests */}
           {data.allocation?.status === 'spot_available' && (
             <div className="mt-6 border-t border-accent/20 pt-4">
               <p className="text-sm text-text-secondary mb-3">You rejected this spot. It is available for swaps.</p>
@@ -149,12 +197,10 @@ const StudentDashboard = () => {
                 <div className="space-y-3">
                   <p className="font-semibold text-white">Incoming Swap Requests:</p>
                   {swapRequests.map((reqItem) => {
-                    // Handle both detailed and legacy formats
                     const reqName = reqItem.requester_name || reqItem.name;
                     const reqRollNo = reqItem.requester_roll_no || reqItem.roll_no;
                     const reqPhone = reqItem.requester_phone || reqItem.phone;
                     const reqId = reqItem.requester_id || reqItem._id;
-                    const reqNextDate = reqItem.requester_next_date;
                     const whatsappLink = generateWhatsAppLink(reqPhone, reqName);
 
                     return (
@@ -164,27 +210,17 @@ const StudentDashboard = () => {
                             <p className="text-white text-sm font-medium">{reqName}</p>
                             <p className="text-text-muted text-xs">{reqRollNo}</p>
                           </div>
-                          <div className="flex gap-2">
-                            {whatsappLink && (
-                              <a href={whatsappLink} target="_blank" rel="noreferrer" 
-                                className="bg-green-600 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-green-500 transition-colors">
-                                WhatsApp
-                              </a>
-                            )}
-                          </div>
+                          {whatsappLink && (
+                            <a href={whatsappLink} target="_blank" rel="noreferrer" className="bg-green-600 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-green-500 transition-colors">
+                              WhatsApp
+                            </a>
+                          )}
                         </div>
-                        {reqNextDate && (
-                          <p className="text-xs text-accent mb-2">
-                            Their next date: <strong>{formatDate(reqNextDate)}</strong>
-                          </p>
-                        )}
-                        <div className="flex gap-2">
-                          <button onClick={() => handleAcceptSwap(data.allocation._id, reqId)} 
-                            className="bg-success text-white px-4 py-1.5 text-xs rounded-lg font-medium hover:bg-success/80 flex-1">
+                        <div className="flex gap-2 mt-2">
+                          <button onClick={() => handleAcceptSwap(data.allocation._id, reqId)} className="bg-success text-white px-4 py-1.5 text-xs rounded-lg font-medium hover:bg-success/80 flex-1">
                             Accept Swap
                           </button>
-                          <button onClick={() => handleRejectSwap(data.allocation._id, reqId)} 
-                            className="bg-danger/10 text-danger px-4 py-1.5 text-xs rounded-lg font-medium hover:bg-danger/20 flex-1 border border-danger/20">
+                          <button onClick={() => handleRejectSwap(data.allocation._id, reqId)} className="bg-danger/10 text-danger px-4 py-1.5 text-xs rounded-lg flex-1 border border-danger/20">
                             Reject
                           </button>
                         </div>
@@ -199,7 +235,6 @@ const StudentDashboard = () => {
           )}
         </div>
 
-        {/* Stats (when not allocated this week) */}
         {!data.isAllocated && (
           <div className="glass-card p-5">
             <div className="flex flex-col gap-4">
@@ -217,16 +252,10 @@ const StudentDashboard = () => {
                   </p>
                 </div>
               </div>
-              
-              <div className="flex justify-between items-center text-sm pt-2">
-                <span className="text-text-secondary">Class Average Quota</span>
-                <span className="text-white font-medium">{data.classAverage}</span>
-              </div>
             </div>
           </div>
         )}
 
-        {/* Next Friday (if not allocated) */}
         {data.nextFriday && !data.isAllocated && (
           <div className="glass-card p-5">
             <div className="flex items-center justify-between mb-3">
@@ -234,38 +263,22 @@ const StudentDashboard = () => {
                 <p className="text-text-secondary text-xs">Next Friday Rotation</p>
                 <p className="text-white font-semibold">{formatDate(data.nextFriday.friday_date)}</p>
               </div>
-              <Badge type={data.nextFriday.status === 'open' ? 'success' : 'warning'}>
-                {data.nextFriday.status}
-              </Badge>
             </div>
 
-            {data.prediction && (
-              <div className={`p-3 rounded-xl border mb-3 ${
-                data.prediction.confidence === 'high' ? 'bg-success/5 border-success/20' :
-                data.prediction.confidence === 'medium' ? 'bg-warning/5 border-warning/20' :
-                'bg-danger/5 border-danger/20'
-              }`}>
-                <p className="text-sm text-text-secondary">{data.prediction.explanation}</p>
-              </div>
-            )}
-
-            <div className="flex gap-3">
+            <div className="flex gap-3 mt-4">
               {data.myRequest ? (
                 <div className="flex-1 text-center py-3 bg-accent/10 rounded-xl border border-accent/20">
-                  <p className="text-accent text-sm font-medium">Request submitted: {data.myRequest.request_type}</p>
+                  <p className="text-accent text-sm font-medium">Request pending: {data.myRequest.request_type}</p>
                 </div>
               ) : (
-                <>
-                  <button onClick={() => navigate('/student/request')} className="btn-primary flex-1">
-                    Request Leave
-                  </button>
-                </>
+                <button onClick={() => navigate('/student/request')} disabled={stageInfo?.stage !== 'request_open'} className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {stageInfo?.stage === 'request_open' ? 'Request Leave' : 'Requests Closed'}
+                </button>
               )}
             </div>
           </div>
         )}
 
-        {/* Notifications */}
         {data.notifications?.length > 0 && (
           <div className="glass-card p-5">
             <h3 className="font-heading text-white text-sm mb-3">System Updates</h3>

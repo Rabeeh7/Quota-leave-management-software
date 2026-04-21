@@ -4,6 +4,30 @@ import StudentLayout from '../../components/layout/StudentLayout';
 import api from '../../services/api';
 import { formatDate, getDaysUntil } from '../../utils/helpers';
 
+// Helper for live countdown
+const Countdown = ({ targetDate, onComplete }) => {
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const diff = new Date(targetDate) - new Date();
+      if (diff <= 0) {
+        clearInterval(timer);
+        setTimeLeft('00:00:00');
+        if (onComplete) onComplete();
+      } else {
+        const h = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, '0');
+        const m = Math.floor((diff / 1000 / 60) % 60).toString().padStart(2, '0');
+        const s = Math.floor((diff / 1000) % 60).toString().padStart(2, '0');
+        setTimeLeft(`${h}:${m}:${s}`);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [targetDate, onComplete]);
+
+  return <span className="font-mono">{timeLeft}</span>;
+};
+
 const Request = () => {
   const [dashData, setDashData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -24,6 +48,7 @@ const Request = () => {
 
   const handleSubmit = async () => {
     if (!dashData?.nextFriday) return;
+    if (!reason.trim()) return alert('A reason is required to request leave.');
     setSubmitting(true);
     try {
       await api.post('/student/request', {
@@ -49,8 +74,17 @@ const Request = () => {
   if (loading) return <StudentLayout><PageLoader /></StudentLayout>;
 
   const friday = dashData?.nextFriday;
-  const isOpen = friday?.status === 'open';
   const daysLeft = friday ? getDaysUntil(friday.friday_date) : null;
+  const windowState = dashData?.windowState;
+  
+  // Calculate UI state based on exact window
+  const _now = new Date();
+  const openDate = windowState?.open_date ? new Date(windowState.open_date) : null;
+  const deadlineDate = windowState?.deadline_date ? new Date(windowState.deadline_date) : null;
+  
+  const isBeforeOpen = openDate && _now < openDate;
+  const isPastDeadline = deadlineDate && _now > deadlineDate;
+  const windowIsOpen = windowState?.is_open;
 
   return (
     <StudentLayout>
@@ -72,7 +106,9 @@ const Request = () => {
               <p className="text-text-secondary text-sm">Upcoming Friday</p>
               <p className="text-white font-heading text-xl mt-1">{formatDate(friday.friday_date)}</p>
               <div className="mt-2">
-                <Badge type={isOpen ? 'success' : 'warning'}>{friday.status}</Badge>
+                <Badge type={windowIsOpen ? 'success' : 'warning'}>
+                  {windowIsOpen ? 'FORM OPEN' : isBeforeOpen ? 'WAITING' : 'CLOSED'}
+                </Badge>
               </div>
               {daysLeft > 0 && (
                 <p className="text-accent text-sm mt-2">{daysLeft} days remaining</p>
@@ -89,17 +125,30 @@ const Request = () => {
                     STATUS: {dashData.myRequest.status.toUpperCase()}
                   </div>
                 </div>
-                {dashData.myRequest.status === 'pending' && (
+                {dashData.myRequest.status === 'pending' && windowIsOpen && (
                   <button onClick={handleCancel} className="btn-danger w-full">Cancel Request</button>
                 )}
               </div>
-            ) : !isOpen ? (
+            ) : isBeforeOpen ? (
+              <div className="glass-card p-5 text-center">
+                <h3 className="font-heading text-white">Requests Not Open Yet</h3>
+                <p className="text-text-secondary text-sm mt-1">
+                  Opens in: <Countdown targetDate={openDate} onComplete={() => window.location.reload()} />
+                </p>
+                <p className="text-text-muted text-xs mt-2">({formatDate(openDate)})</p>
+              </div>
+            ) : isPastDeadline || !windowIsOpen ? (
               <div className="glass-card p-5 text-center">
                 <h3 className="font-heading text-white">Requests Closed</h3>
                 <p className="text-text-secondary text-sm mt-1">The deadline has passed for this Friday.</p>
+                <p className="text-text-muted text-xs mt-2">The class leader is currently reviewing the list.</p>
               </div>
             ) : (
               <>
+                {/* Time left to request */}
+                <div className="mb-2 text-center text-accent font-medium mt-[-10px]">
+                  Time left to request: <Countdown targetDate={deadlineDate} onComplete={() => window.location.reload()} />
+                </div>
                 {/* Confidence Meter */}
                 {dashData.prediction && (
                   <div className={`rounded-2xl p-4 border ${
@@ -137,8 +186,8 @@ const Request = () => {
 
                 {/* Reason */}
                 <div className="glass-card p-5">
-                  <h3 className="font-heading text-white text-sm mb-3">Reason (optional)</h3>
-                  <textarea className="input-field min-h-[100px] resize-none" value={reason}
+                  <h3 className="font-heading text-white text-sm mb-3">Reason (required)</h3>
+                  <textarea className="input-field min-h-[100px] resize-none border-l-2 border-l-accent" value={reason}
                     onChange={e => setReason(e.target.value)}
                     placeholder="Why do you need leave this Friday?" />
                 </div>

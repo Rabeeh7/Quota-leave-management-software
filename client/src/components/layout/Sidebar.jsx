@@ -5,17 +5,14 @@ const superadminLinks = [
   { to: '/superadmin/dashboard', label: 'Dashboard' },
   { to: '/superadmin/requests', label: 'Requests' },
   { to: '/superadmin/appoint-leader', label: 'Departments' },
-  { to: '/superadmin/setup', label: 'Semester Setup' },
-  { to: '/superadmin/friday-list', label: 'Friday List' },
-  { to: '/superadmin/blocked', label: 'Blocked Dates' },
   { to: '/superadmin/students', label: 'Students' },
   { to: '/superadmin/analytics', label: 'Analytics' },
 ];
 
 const leaderLinks = [
   { to: '/leader/dashboard', label: 'Dashboard' },
+  { to: '/leader/setup', label: 'Semester' },
   { to: '/leader/students', label: 'Students' },
-  { to: '/leader/setup', label: 'Semester Setup' },
   { to: '/leader/friday-list', label: 'Friday List' },
   { to: '/leader/reports', label: 'Reports' },
 ];

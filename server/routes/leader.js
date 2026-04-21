@@ -9,6 +9,7 @@ const StudentProfile = require('../models/StudentProfile');
 const LeaveRequest = require('../models/LeaveRequest');
 const LeaveAllocation = require('../models/LeaveAllocation');
 const OverrideLog = require('../models/OverrideLog');
+const AuditLog = require('../models/AuditLog');
 const Notification = require('../models/Notification');
 const { generateSemesterCalendar, getCalendarStats } = require('../services/calendarEngine');
 const { runRotationEngine, recalculateAfterRemoval } = require('../services/fairnessEngine');
@@ -497,12 +498,12 @@ router.post('/override', async (req, res) => {
     });
 
     // Log override
-    await OverrideLog.create({
+    await AuditLog.create({
       friday_id,
       department_id,
-      action: 'manual_add',
-      target_student_id: student_id,
-      reason,
+      action: 'Manual add student',
+      target_student: student_id,
+      details: reason,
       performed_by: req.user._id
     });
 
@@ -528,12 +529,12 @@ router.put('/allocation/:id/remove', async (req, res) => {
     if (!allocation) return res.status(404).json({ message: 'Allocation not found' });
 
     // Log override
-    await OverrideLog.create({
+    await AuditLog.create({
       friday_id: allocation.friday_id,
       department_id: allocation.department_id,
-      action: 'manual_remove',
-      target_student_id: allocation.student_id,
-      reason,
+      action: 'Manual remove student',
+      target_student: allocation.student_id,
+      details: reason,
       performed_by: req.user._id
     });
 
@@ -551,29 +552,183 @@ router.put('/allocation/:id/remove', async (req, res) => {
   }
 });
 
-// POST /api/leader/friday/:id/publish
-router.post('/friday/:id/publish', async (req, res) => {
+// ============ NEW WORKFLOW ROUTES ============
+
+// POST /api/leader/friday/:id/set-windows
+router.post('/friday/:id/set-windows', async (req, res) => {
   try {
+    const { request_open, request_close, swap_hours, max_friday_slots } = req.body;
     const friday = await FridayCalendar.findById(req.params.id);
     if (!friday) return res.status(404).json({ message: 'Friday not found' });
 
-    friday.status = 'published';
-    await friday.save();
-
-    // Notify all allocated students
-    const allocations = await LeaveAllocation.find({ 
-      friday_id: friday._id, released: false 
-    });
-
-    for (const alloc of allocations) {
-      await Notification.create({
-        user_id: alloc.student_id,
-        message: `The leave list for ${friday.friday_date.toLocaleDateString()} has been published! Please confirm your attendance.`,
-        type: 'published'
-      });
+    if (max_friday_slots) friday.total_slots = max_friday_slots;
+    if (request_open) friday.request_window_open = new Date(request_open);
+    if (request_close) friday.request_window_close = new Date(request_close);
+    if (swap_hours) {
+        friday.swap_window_hours = swap_hours;
+        if (friday.stage === 'initial_published') {
+            const closeDate = new Date();
+            closeDate.setHours(closeDate.getHours() + Number(swap_hours));
+            friday.swap_window_close = closeDate;
+        }
+    }
+    
+    const now = new Date();
+    if (friday.stage === 'upcoming' || !friday.stage) {
+      if (friday.request_window_open && now >= friday.request_window_open && now < friday.request_window_close) {
+        friday.stage = 'request_open';
+      } else if (friday.request_window_close && now >= friday.request_window_close) {
+        friday.stage = 'request_closed';
+      } else {
+        friday.stage = 'upcoming';
+      }
     }
 
-    res.json({ message: 'Friday list published', friday });
+    await friday.save();
+
+    await AuditLog.create({
+      department_id: req.user.department_id,
+      friday_id: friday._id,
+      action: 'Set windows',
+      performed_by: req.user._id,
+      details: 'Updated request/swap windows'
+    });
+
+    res.json({ message: 'Windows updated', friday });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// POST /api/leader/friday/:id/run-rotation
+router.post('/friday/:id/run-rotation', async (req, res) => {
+  try {
+    const fridayId = req.params.id;
+    const friday = await FridayCalendar.findById(fridayId);
+    if (!friday) return res.status(404).json({ message: 'Friday not found' });
+    
+    const result = await runRotationEngine(fridayId);
+    const scoredStudents = result.previewList;
+    const selected = scoredStudents.slice(0, friday.total_slots);
+  
+    await LeaveAllocation.deleteMany({ friday_id: fridayId, allocation_type: 'auto' });
+  
+    for (const student of selected) {
+      await LeaveAllocation.create({
+        friday_id: fridayId,
+        department_id: friday.department_id,
+        student_id: student.student_id,
+        allocation_type: 'auto',
+        status: 'allocated'
+      });
+    }
+    
+    friday.stage = 'request_closed';
+    await friday.save();
+
+    await AuditLog.create({
+      department_id: req.user.department_id,
+      friday_id: friday._id,
+      action: 'Run rotation',
+      performed_by: req.user._id,
+      details: `Generated list of ${selected.length} students`
+    });
+
+    res.json({ message: 'Rotation logic applied', allocationsCount: selected.length });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// POST /api/leader/friday/:id/publish-initial
+router.post('/friday/:id/publish-initial', async (req, res) => {
+  try {
+    const fridayId = req.params.id;
+    const friday = await FridayCalendar.findById(fridayId);
+    if (!friday) return res.status(404).json({ message: 'Friday not found' });
+
+    friday.stage = 'initial_published';
+    
+    if (friday.swap_window_hours) {
+        const closeDate = new Date();
+        closeDate.setHours(closeDate.getHours() + friday.swap_window_hours);
+        friday.swap_window_close = closeDate;
+    }
+
+    await friday.save();
+    
+    const allocations = await LeaveAllocation.find({ friday_id: friday._id });
+    for (const alloc of allocations) {
+        await Notification.create({
+            user_id: alloc.student_id,
+            message: `Initial list published! You got a pending slot for ${friday.friday_date.toLocaleDateString()}`,
+            type: 'info'
+        });
+    }
+
+    await AuditLog.create({
+      department_id: req.user.department_id,
+      friday_id: friday._id,
+      action: 'Publish initial list',
+      performed_by: req.user._id,
+      details: 'Stage set to initial_published'
+    });
+
+    res.json({ message: 'Initial list published. Swap window open.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// POST /api/leader/friday/:id/publish-final
+router.post('/friday/:id/publish-final', async (req, res) => {
+  try {
+    const fridayId = req.params.id;
+    const friday = await FridayCalendar.findById(fridayId);
+    if (!friday) return res.status(404).json({ message: 'Friday not found' });
+
+    friday.stage = 'final_published';
+    friday.status = 'published';
+    await friday.save();
+    
+    const allocations = await LeaveAllocation.find({ friday_id: friday._id });
+    for (const alloc of allocations) {
+        await Notification.create({
+            user_id: alloc.student_id,
+            message: `Final list published! Your quota for ${friday.friday_date.toLocaleDateString()} is locked.`,
+            type: 'published'
+        });
+        
+        await StudentProfile.findOneAndUpdate(
+            { user_id: alloc.student_id, semester_id: friday.semester_id },
+            { $inc: { rotation_priority: 1, total_leaves: 1 }, last_leave_date: friday.friday_date }
+        );
+    }
+
+    await AuditLog.create({
+      department_id: req.user.department_id,
+      friday_id: friday._id,
+      action: 'Publish final list',
+      performed_by: req.user._id,
+      details: 'Stage set to final_published. Modifying profiles.'
+    });
+
+    res.json({ message: 'Final list locked and published.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// GET /api/leader/audit-log
+router.get('/audit-log', async (req, res) => {
+  try {
+    const logs = await AuditLog.find({ department_id: req.user.department_id })
+                 .populate('performed_by', 'name')
+                 .populate('target_student', 'name')
+                 .populate('friday_id', 'friday_date')
+                 .sort({ created_at: -1 })
+                 .limit(100);
+    res.json(logs);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -586,7 +741,7 @@ router.get('/whatsapp-export/:fridayId', async (req, res) => {
     if (!friday) return res.status(404).json({ message: 'Friday not found' });
 
     const allocations = await LeaveAllocation.find({ 
-      friday_id: friday._id, released: false 
+      friday_id: friday._id 
     }).populate('student_id', 'name roll_no phone');
 
     const totalStudents = await User.countDocuments({ 
@@ -597,29 +752,17 @@ router.get('/whatsapp-export/:fridayId', async (req, res) => {
       weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' 
     });
 
-    let text = `✅ *Quota Manager — ${dateStr}*\n`;
-    text += `Approved Students (${allocations.length}/${totalStudents}):\n\n`;
+    let text = `📋 Quota Manager — Friday ${dateStr}\n`;
+    text += `✅ Approved Students (${allocations.length}/${totalStudents}):\n`;
 
     allocations.forEach((a, i) => {
       const student = a.student_id;
-      text += `${i + 1}. ${student.name} — ${student.roll_no}\n`;
+      text += `${i + 1}. ${student.name}\n`;
     });
 
-    text += `\n_Generated by Quota Manager_`;
+    text += `\nGenerated by Quota Manager`;
 
     res.json({ text, allocations_count: allocations.length });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-});
-
-// ============ RUN ROTATION ENGINE ============
-
-// POST /api/leader/rotation/run/:fridayId
-router.post('/rotation/run/:fridayId', async (req, res) => {
-  try {
-    const result = await runRotationEngine(req.params.fridayId);
-    res.json(result);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

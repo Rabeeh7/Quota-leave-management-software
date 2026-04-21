@@ -31,4 +31,32 @@ const getDayName = (date) => {
   return new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
 };
 
-module.exports = { generateToken, formatDateStr, getDayName };
+const getWindowDates = (fridayDate, semester) => {
+  const dayMap = { 'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6 };
+  
+  const friday = new Date(fridayDate);
+  
+  const getDateForDayBeforeFriday = (dayName, timeStr) => {
+    let targetDay = dayMap[dayName] !== undefined ? dayMap[dayName] : 3;
+    let diff = 5 - targetDay; 
+    if (diff <= 0) diff += 7; 
+
+    const d = new Date(friday);
+    d.setDate(d.getDate() - diff);
+    
+    if (timeStr) {
+      const parts = timeStr.split(':');
+      if (parts.length >= 2) {
+        d.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
+      }
+    }
+    return d;
+  };
+
+  const openDate = getDateForDayBeforeFriday(semester.request_open_day, semester.request_open_time);
+  const deadlineDate = getDateForDayBeforeFriday(semester.request_deadline_day, semester.request_deadline_time);
+  
+  return { openDate, deadlineDate };
+};
+
+module.exports = { generateToken, formatDateStr, getDayName, getWindowDates };

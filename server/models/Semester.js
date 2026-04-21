@@ -8,6 +8,8 @@ const semesterSchema = new mongoose.Schema({
   total_students: { type: Number, default: 0 },
   quota_percentage: { type: Number, default: 33 },
   max_friday_slots: { type: Number, default: 12 },
+  request_open_day: { type: String, default: 'Tuesday' },
+  request_open_time: { type: String, default: '09:00' },
   request_deadline_day: { type: String, default: 'Wednesday' },
   request_deadline_time: { type: String, default: '09:00' },
   swap_enabled: { type: Boolean, default: true },

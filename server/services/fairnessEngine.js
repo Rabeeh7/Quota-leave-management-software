@@ -13,11 +13,15 @@ const runRotationEngine = async (fridayId) => {
 
   const { department_id, semester_id, total_slots } = friday;
 
+  // Get all pending requests for this friday
+  const pendingRequests = await LeaveRequest.find({ friday_id: fridayId, status: { $in: ['pending', 'approved'] } });
+  const requesterIds = pendingRequests.map(r => r.student_id.toString());
+
   const profiles = await StudentProfile.find({ department_id, semester_id }).populate('user_id');
-  const activeProfiles = profiles.filter(p => p.user_id && p.user_id.is_active);
+  const activeProfiles = profiles.filter(p => p.user_id && p.user_id.is_active && requesterIds.includes(p.user_id._id.toString()));
 
   if (activeProfiles.length === 0) {
-    return { allocated: [], all_scores: [] };
+    return { previewList: [] };
   }
 
   // Filter out exhausted quota students
@@ -38,14 +42,18 @@ const runRotationEngine = async (fridayId) => {
       wait_time = Infinity;
     }
 
+    const req = pendingRequests.find(r => r.student_id.toString() === profile.user_id._id.toString());
     return {
       student_id: profile.user_id._id,
       user: profile.user_id,
       profile,
+      request_reason: req?.reason || '',
+      request_type: req?.request_type || 'normal',
       metrics: {
         never_had,
         quota_used: profile.total_leaves,
-        wait_time
+        wait_time,
+        submission_time: req?.submitted_at ? new Date(req.submitted_at).getTime() : (req?.created_at ? new Date(req.created_at).getTime() : 0)
       }
     };
   });
@@ -58,7 +66,11 @@ const runRotationEngine = async (fridayId) => {
       return a.metrics.quota_used - b.metrics.quota_used;
     }
 
-    return b.metrics.wait_time - a.metrics.wait_time;
+    if (a.metrics.wait_time !== b.metrics.wait_time) {
+      return b.metrics.wait_time - a.metrics.wait_time;
+    }
+
+    return a.metrics.submission_time - b.metrics.submission_time;
   });
 
   return {
@@ -66,7 +78,9 @@ const runRotationEngine = async (fridayId) => {
       student_id: s.student_id,
       name: s.user.name,
       roll_no: s.user.roll_no,
-      metrics: s.metrics
+      metrics: s.metrics,
+      reason: s.request_reason,
+      request_type: s.request_type
     }))
   };
 };

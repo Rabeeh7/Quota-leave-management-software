@@ -89,6 +89,19 @@ const StudentManager = () => {
     } catch (err) { alert(err.response?.data?.message || 'Error deleting'); }
   };
 
+  const handleDownloadCSV = () => {
+    let csv = 'Name,Roll No/Username,Phone,Total Leaves,Status\n';
+    students.forEach(s => {
+      csv += `"${s.name}","${s.roll_no}","${s.phone || ''}",${s.profile?.total_leaves || 0},${s.is_active ? 'Active' : 'Inactive'}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'students.csv';
+    a.click();
+  };
+
   const filtered = students.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
     s.roll_no?.toLowerCase().includes(search.toLowerCase())
@@ -111,8 +124,9 @@ const StudentManager = () => {
             </select>
           ) : (
             <>
+              <button onClick={handleDownloadCSV} className="btn-secondary text-sm hidden sm:block">↓ CSV</button>
               <button onClick={() => setShowBulk(true)} className="btn-secondary text-sm">Bulk Import</button>
-              <button onClick={() => setShowAdd(true)} className="btn-primary text-sm">+ Add Student</button>
+              <button onClick={() => setShowAdd(true)} className="btn-primary text-sm">+ Add</button>
             </>
           )}
         </div>

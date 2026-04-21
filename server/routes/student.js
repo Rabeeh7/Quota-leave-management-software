@@ -10,6 +10,7 @@ const LeaveRequest = require('../models/LeaveRequest');
 const LeaveAllocation = require('../models/LeaveAllocation');
 const Notification = require('../models/Notification');
 const { predictConfidence, getNextQuotaDate } = require('../services/fairnessEngine');
+const { getWindowDates } = require('../utils/helpers');
 
 router.use(auth, roleGuard('student'));
 
@@ -96,6 +97,17 @@ router.get('/dashboard', async (req, res) => {
       prediction = await predictConfidence(user._id, nextFriday._id);
     }
 
+    let windowState = null;
+    if (nextFriday) {
+      const { openDate, deadlineDate } = getWindowDates(nextFriday.friday_date, activeSemester);
+      const _now = new Date();
+      windowState = {
+        open_date: openDate,
+        deadline_date: deadlineDate,
+        is_open: _now >= openDate && _now <= deadlineDate && nextFriday.status === 'open'
+      };
+    }
+
     // Get predicted next quota date
     let nextQuotaDate = null;
     if (isAllocated && nextFriday) {
@@ -128,7 +140,8 @@ router.get('/dashboard', async (req, res) => {
       prediction,
       nextQuotaDate,
       notifications,
-      progress
+      progress,
+      windowState
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -144,8 +157,14 @@ router.post('/request', async (req, res) => {
     const friday = await FridayCalendar.findById(friday_id);
     if (!friday) return res.status(404).json({ message: 'Friday not found' });
 
-    if (friday.status !== 'open') {
-      return res.status(400).json({ message: 'This Friday is not accepting requests' });
+    const activeSemester = await Semester.findById(friday.semester_id);
+
+    if (friday.stage !== 'request_open') {
+      return res.status(400).json({ message: 'Request window is not currently open' });
+    }
+
+    if (!reason || reason.trim() === '') {
+      return res.status(400).json({ message: 'Reason is required for leave requests' });
     }
 
     // Check for existing request
@@ -175,6 +194,7 @@ router.post('/request', async (req, res) => {
       friday_id,
       request_type: request_type || 'normal',
       reason,
+      submitted_at: new Date(),
       swap_with_student_id
     });
 
@@ -401,6 +421,45 @@ router.get('/leaderboard', async (req, res) => {
       students
     });
 
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// GET /api/student/current-stage
+router.get('/current-stage', async (req, res) => {
+  try {
+    const user = req.user;
+    const activeSemester = await Semester.findOne({ department_id: user.department_id, is_active: true });
+    if (!activeSemester) return res.json({ stage: 'unavailable' });
+
+    const now = new Date();
+    const nextFriday = await FridayCalendar.findOne({
+      semester_id: activeSemester._id,
+      friday_date: { $gte: now },
+      status: { $ne: 'passed' }
+    }).sort({ friday_date: 1 });
+
+    if (!nextFriday) return res.json({ stage: 'unavailable' });
+
+    // Auto-update stage based on time
+    if (nextFriday.stage === 'upcoming' || !nextFriday.stage || nextFriday.stage === 'request_open' || nextFriday.stage === 'request_closed') {
+      if (nextFriday.request_window_open && now >= nextFriday.request_window_open && now < nextFriday.request_window_close) {
+        nextFriday.stage = 'request_open';
+        await nextFriday.save();
+      } else if (nextFriday.request_window_close && now >= nextFriday.request_window_close && (!nextFriday.stage || nextFriday.stage === 'request_open' || nextFriday.stage === 'upcoming')) {
+        nextFriday.stage = 'request_closed';
+        await nextFriday.save();
+      }
+    }
+
+    res.json({ 
+        friday_id: nextFriday._id,
+        stage: nextFriday.stage, 
+        request_open: nextFriday.request_window_open, 
+        request_close: nextFriday.request_window_close,
+        swap_close: nextFriday.swap_window_close 
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

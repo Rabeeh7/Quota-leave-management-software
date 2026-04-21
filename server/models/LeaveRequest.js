@@ -14,8 +14,9 @@ const leaveRequestSchema = new mongoose.Schema({
     enum: ['pending', 'approved', 'denied', 'released'], 
     default: 'pending' 
   },
-  reason: { type: String },
+  reason: { type: String, required: true },
   swap_with_student_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  submitted_at: { type: Date, default: Date.now },
   created_at: { type: Date, default: Date.now }
 });
 
