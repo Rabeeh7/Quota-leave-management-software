@@ -48,6 +48,7 @@ function App() {
             }
           >
             <Route path="dashboard" element={<SuperAdminDashboard />} />
+            <Route path="setup" element={<SemesterSetup />} />
             <Route path="requests" element={<Requests />} />
             <Route path="appoint-leader" element={<AppointLeader />} />
             <Route path="students" element={<Students />} />
@@ -66,7 +67,6 @@ function App() {
           >
             <Route path="dashboard" element={<LeaderDashboard />} />
             <Route path="students" element={<Students />} />
-            <Route path="setup" element={<SemesterSetup />} />
             <Route path="friday-list" element={<LeaderFridayList />} />
             <Route path="blocked" element={<BlockedFridays />} />
             <Route path="reports" element={<Reports />} />

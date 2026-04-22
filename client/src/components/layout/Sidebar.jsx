@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/useAuth';
 
 const superadminLinks = [
   { to: '/superadmin/dashboard', label: 'Dashboard' },
+  { to: '/superadmin/setup', label: 'Semester' },
   { to: '/superadmin/requests', label: 'Requests' },
   { to: '/superadmin/appoint-leader', label: 'Departments' },
   { to: '/superadmin/students', label: 'Students' },
@@ -11,7 +12,6 @@ const superadminLinks = [
 
 const leaderLinks = [
   { to: '/leader/dashboard', label: 'Dashboard' },
-  { to: '/leader/setup', label: 'Semester' },
   { to: '/leader/students', label: 'Students' },
   { to: '/leader/friday-list', label: 'Friday List' },
   { to: '/leader/reports', label: 'Reports' },

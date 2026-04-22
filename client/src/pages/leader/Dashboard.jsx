@@ -91,8 +91,7 @@ const LeaderDashboard = () => {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
         <h2 className="font-heading text-2xl text-white mb-2">No Active Semester</h2>
-        <p className="text-text-secondary mb-6">Set up a semester to start managing Friday leaves.</p>
-        <a href="/leader/setup" className="btn-primary">Setup Semester</a>
+        <p className="text-text-secondary mb-6">Please contact the Super Admin to set up an active semester.</p>
       </div>
     );
   }
