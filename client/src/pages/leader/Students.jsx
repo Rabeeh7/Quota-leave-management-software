@@ -61,7 +61,12 @@ const StudentManager = () => {
         return { name: parts[0], roll_no: parts[1], phone: parts[2] || '', password: parts[3] || parts[1] };
       });
       const res = await api.post('/leader/students/bulk-import', { students: parsed });
-      alert(`Imported: ${res.data.results.success} success, ${res.data.results.failed} failed`);
+      const { success, failed, errors } = res.data.results;
+      if (failed > 0) {
+        alert(`Imported: ${success} success.\nFailed: ${failed}.\nReasons:\n${errors.slice(0, 10).join('\n')}${errors.length > 10 ? '\n...and more' : ''}`);
+      } else {
+        alert(`Imported successfully: ${success} students.`);
+      }
       setShowBulk(false);
       setBulkText('');
       fetchStudents();

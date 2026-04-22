@@ -331,33 +331,44 @@ router.post('/students/bulk-import', async (req, res) => {
 
     for (const s of students) {
       try {
-        const existing = await User.findOne({ roll_no: s.roll_no });
-        if (existing) {
-          results.failed++;
-          results.errors.push(`${s.roll_no}: Already exists`);
-          continue;
+        let student = await User.findOne({ roll_no: s.roll_no });
+        let isNew = false;
+        
+        if (!student) {
+          student = await User.create({
+            name: s.name,
+            username: s.roll_no,
+            roll_no: s.roll_no,
+            phone: s.phone,
+            password: s.password || s.roll_no,
+            role: 'student',
+            department_id
+          });
+          isNew = true;
         }
 
-        const student = await User.create({
-          name: s.name,
-          username: s.roll_no,
-          roll_no: s.roll_no,
-          phone: s.phone,
-          password: s.password || s.roll_no,
-          role: 'student',
-          department_id
-        });
-
-        const activeSemester = await Semester.findOne({ department_id, is_active: true });
+        const activeSemester = await Semester.findOne({ is_active: true });
         if (activeSemester) {
-          await StudentProfile.create({
+          const profileExists = await StudentProfile.findOne({
             user_id: student._id,
-            department_id,
             semester_id: activeSemester._id
           });
+          
+          if (!profileExists) {
+            await StudentProfile.create({
+              user_id: student._id,
+              department_id,
+              semester_id: activeSemester._id
+            });
+          }
         }
 
-        results.success++;
+        if (!isNew) {
+          results.failed++;
+          results.errors.push(`${s.roll_no}: Found existing student. Attached to current semester if missing.`);
+        } else {
+          results.success++;
+        }
       } catch (err) {
         results.failed++;
         results.errors.push(`${s.roll_no}: ${err.message}`);
@@ -365,10 +376,10 @@ router.post('/students/bulk-import', async (req, res) => {
     }
 
     // Update semester student count
-    const activeSemester = await Semester.findOne({ department_id, is_active: true });
+    const activeSemester = await Semester.findOne({ is_active: true });
     if (activeSemester) {
-      const total = await User.countDocuments({ department_id, role: 'student', is_active: true });
-      activeSemester.total_students = total;
+      const activeStudentsGlobal = await User.countDocuments({ role: 'student', is_active: true });
+      activeSemester.total_students = activeStudentsGlobal;
       await activeSemester.save();
     }
 
