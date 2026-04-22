@@ -272,14 +272,6 @@ router.post('/semester/setup', async (req, res) => {
       start_date,
       end_date,
       total_students,
-      max_friday_slots: max_friday_slots || 12,
-      quota_percentage: quota_percentage || 33,
-      request_open_day: request_open_day || 'Tuesday',
-      request_open_time: request_open_time || '00:00',
-      request_deadline_day: request_deadline_day || 'Wednesday',
-      request_deadline_time: request_deadline_time || '09:00',
-      swap_enabled: swap_enabled !== false,
-      emergency_limit: emergency_limit || 2,
       is_active: true
     });
 
@@ -293,7 +285,7 @@ router.post('/semester/setup', async (req, res) => {
         semester_id: semester._id,
         start_date,
         end_date,
-        total_slots: max_friday_slots || 12,
+        total_slots: dept.max_friday_slots || 12,
         exam_periods: exam_periods || [],
         break_periods: break_periods || [],
         tour_dates: [],

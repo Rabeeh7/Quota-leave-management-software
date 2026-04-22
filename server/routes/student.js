@@ -20,7 +20,7 @@ router.get('/dashboard', async (req, res) => {
     const user = req.user;
     const department_id = user.department_id;
 
-    const activeSemester = await Semester.findOne({ department_id, is_active: true });
+    const activeSemester = await Semester.findOne({ is_active: true });
     if (!activeSemester) {
       return res.json({ message: 'No active semester', data: null });
     }
@@ -99,7 +99,17 @@ router.get('/dashboard', async (req, res) => {
 
     let windowState = null;
     if (nextFriday) {
-      const { openDate, deadlineDate } = getWindowDates(nextFriday.friday_date, activeSemester);
+      const Department = require('../models/Department');
+      const dept = await Department.findById(department_id);
+      
+      const config = {
+        request_open_day: dept?.request_open_day || activeSemester.request_open_day,
+        request_open_time: dept?.request_open_time || activeSemester.request_open_time,
+        request_deadline_day: dept?.request_deadline_day || activeSemester.request_deadline_day,
+        request_deadline_time: dept?.request_deadline_time || activeSemester.request_deadline_time
+      };
+
+      const { openDate, deadlineDate } = getWindowDates(nextFriday.friday_date, config);
       const _now = new Date();
       windowState = {
         open_date: openDate,
@@ -181,9 +191,14 @@ router.post('/request', async (req, res) => {
       const profile = await StudentProfile.findOne({ 
         user_id: user._id, semester_id: semester._id 
       });
-      if (profile && profile.emergency_count >= semester.emergency_limit) {
+      
+      const Department = require('../models/Department');
+      const dept = await Department.findById(user.department_id);
+      const limit = dept?.emergency_limit || semester.emergency_limit;
+
+      if (profile && profile.emergency_count >= limit) {
         return res.status(400).json({ 
-          message: `Emergency limit reached (${semester.emergency_limit} per semester)` 
+          message: `Emergency limit reached (${limit} per semester)` 
         });
       }
     }
@@ -362,7 +377,7 @@ router.get('/leaderboard', async (req, res) => {
   try {
     const user = req.user;
     
-    const activeSemester = await Semester.findOne({ department_id: user.department_id, is_active: true });
+    const activeSemester = await Semester.findOne({ is_active: true });
     if (!activeSemester) return res.json({ message: 'No active semester', students: [] });
 
     // Fetch all active students in the semester
@@ -430,7 +445,7 @@ router.get('/leaderboard', async (req, res) => {
 router.get('/current-stage', async (req, res) => {
   try {
     const user = req.user;
-    const activeSemester = await Semester.findOne({ department_id: user.department_id, is_active: true });
+    const activeSemester = await Semester.findOne({ is_active: true });
     if (!activeSemester) return res.json({ stage: 'unavailable' });
 
     const now = new Date();

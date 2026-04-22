@@ -16,11 +16,11 @@ import SemesterSetup from './pages/leader/SemesterSetup';
 import FridayList from './pages/leader/FridayList';
 import BlockedFridays from './pages/leader/BlockedFridays';
 
-// Leader
 import LeaderDashboard from './pages/leader/Dashboard';
 import Students from './pages/leader/Students';
 import LeaderFridayList from './pages/leader/LeaderFridayList';
 import Reports from './pages/leader/Reports';
+import LeaderSettings from './pages/leader/Settings';
 
 // Student
 import StudentDashboard from './pages/student/Dashboard';
@@ -70,6 +70,7 @@ function App() {
             <Route path="friday-list" element={<LeaderFridayList />} />
             <Route path="blocked" element={<BlockedFridays />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="settings" element={<LeaderSettings />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 

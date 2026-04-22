@@ -15,6 +15,7 @@ const leaderLinks = [
   { to: '/leader/students', label: 'Students' },
   { to: '/leader/friday-list', label: 'Friday List' },
   { to: '/leader/reports', label: 'Reports' },
+  { to: '/leader/settings', label: 'Settings' },
 ];
 
 const Sidebar = () => {

@@ -9,15 +9,7 @@ const SemesterSetup = () => {
   const [formData, setFormData] = useState({
     semester_name: '',
     start_date: '',
-    end_date: '',
-    max_friday_slots: 12,
-    quota_percentage: 33,
-    request_open_day: 'Tuesday',
-    request_open_time: '00:00',
-    request_deadline_day: 'Wednesday',
-    request_deadline_time: '17:00',
-    emergency_limit: 2,
-    swap_enabled: true
+    end_date: ''
   });
   const [examPeriods, setExamPeriods] = useState([]);
   const [breakPeriods, setBreakPeriods] = useState([]);
@@ -57,7 +49,7 @@ const SemesterSetup = () => {
     }
     const blocked = examPeriods.length + breakPeriods.length;
     const valid = Math.max(0, fridays - blocked);
-    const totalSlots = valid * formData.max_friday_slots;
+    const totalSlots = valid * 12; // Approximation for preview
     return { fridays, blocked, valid, totalSlots };
   };
 
@@ -89,51 +81,6 @@ const SemesterSetup = () => {
               <label className="block text-sm text-text-secondary mb-1.5">End Date</label>
               <input required type="date" className="input-field" value={formData.end_date}
                 onChange={e => setFormData({ ...formData, end_date: e.target.value })} />
-            </div>
-          </div>
-          {/* New Request Window controls */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-text-secondary mb-1.5">Request Open Day</label>
-              <select className="input-field" value={formData.request_open_day}
-                onChange={e => setFormData({ ...formData, request_open_day: e.target.value })}>
-                {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-text-secondary mb-1.5">Request Open Time</label>
-              <input type="time" className="input-field" value={formData.request_open_time}
-                onChange={e => setFormData({ ...formData, request_open_time: e.target.value })} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-text-secondary mb-1.5">Deadline Day</label>
-              <select className="input-field" value={formData.request_deadline_day}
-                onChange={e => setFormData({ ...formData, request_deadline_day: e.target.value })}>
-                {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-text-secondary mb-1.5">Deadline Time</label>
-              <input type="time" className="input-field" value={formData.request_deadline_time}
-                onChange={e => setFormData({ ...formData, request_deadline_time: e.target.value })} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-text-secondary mb-1.5">Slots per Friday</label>
-              <input type="number" className="input-field" value={formData.max_friday_slots}
-                onChange={e => setFormData({ ...formData, max_friday_slots: parseInt(e.target.value) || 12 })} />
-            </div>
-            <div>
-              <label className="block text-sm text-text-secondary mb-1.5">Emergency Limit</label>
-              <input type="number" className="input-field" value={formData.emergency_limit}
-                onChange={e => setFormData({ ...formData, emergency_limit: parseInt(e.target.value) || 2 })} />
             </div>
           </div>
         </div>

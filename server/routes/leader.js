@@ -17,6 +17,44 @@ const { generateWarnings } = require('../services/warningEngine');
 
 router.use(auth, roleGuard('leader'));
 
+// ============ DEPARTMENT SETTINGS ============
+router.get('/settings', async (req, res) => {
+  try {
+    const Department = require('../models/Department');
+    const dept = await Department.findById(req.user.department_id);
+    if (!dept) return res.status(404).json({ message: 'Department not found' });
+    res.json(dept);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+router.put('/settings', async (req, res) => {
+  try {
+    const { 
+      request_open_day, request_open_time, 
+      request_deadline_day, request_deadline_time, 
+      max_friday_slots, emergency_limit, 
+      swap_enabled, swap_hours 
+    } = req.body;
+    
+    const Department = require('../models/Department');
+    const dept = await Department.findByIdAndUpdate(
+      req.user.department_id,
+      {
+        request_open_day, request_open_time,
+        request_deadline_day, request_deadline_time,
+        max_friday_slots, emergency_limit,
+        swap_enabled, swap_hours
+      },
+      { new: true }
+    );
+    res.json({ message: 'Settings updated successfully', dept });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // ============ SEMESTER ============
 
 // POST /api/leader/semester/setup
@@ -116,7 +154,6 @@ router.get('/semester/:id', async (req, res) => {
 router.get('/semester/active/current', async (req, res) => {
   try {
     const semester = await Semester.findOne({ 
-      department_id: req.user.department_id, 
       is_active: true 
     });
     if (!semester) return res.status(404).json({ message: 'No active semester' });
@@ -405,7 +442,7 @@ router.put('/students/:id', async (req, res) => {
 
 async function buildLeaderDashboard(department_id, semesterId) {
   const semester = await Semester.findById(semesterId);
-  if (!semester || semester.department_id.toString() !== department_id.toString()) {
+  if (!semester) {
     return null;
   }
 
@@ -457,7 +494,7 @@ async function buildLeaderDashboard(department_id, semesterId) {
 router.get('/dashboard', async (req, res) => {
   try {
     const department_id = req.user.department_id;
-    const semester = await Semester.findOne({ department_id, is_active: true });
+    const semester = await Semester.findOne({ is_active: true });
     if (!semester) return res.status(404).json({ message: 'No active semester' });
 
     const payload = await buildLeaderDashboard(department_id, semester._id);
