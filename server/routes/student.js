@@ -20,7 +20,11 @@ router.get('/dashboard', async (req, res) => {
     const user = req.user;
     const department_id = user.department_id;
 
-    const activeSemester = await Semester.findOne({ is_active: true });
+    // First try department-specific semester, then fall back to global
+    let activeSemester = await Semester.findOne({ department_id, is_active: true });
+    if (!activeSemester) {
+      activeSemester = await Semester.findOne({ is_active: true });
+    }
     if (!activeSemester) {
       return res.json({ message: 'No active semester', data: null });
     }
@@ -377,7 +381,11 @@ router.get('/leaderboard', async (req, res) => {
   try {
     const user = req.user;
     
-    const activeSemester = await Semester.findOne({ is_active: true });
+    // First try department-specific semester, then fall back to global
+    let activeSemester = await Semester.findOne({ department_id: user.department_id, is_active: true });
+    if (!activeSemester) {
+      activeSemester = await Semester.findOne({ is_active: true });
+    }
     if (!activeSemester) return res.json({ message: 'No active semester', students: [] });
 
     // Fetch all active students in the semester
@@ -445,7 +453,11 @@ router.get('/leaderboard', async (req, res) => {
 router.get('/current-stage', async (req, res) => {
   try {
     const user = req.user;
-    const activeSemester = await Semester.findOne({ is_active: true });
+    // First try department-specific semester, then fall back to global
+    let activeSemester = await Semester.findOne({ department_id: user.department_id, is_active: true });
+    if (!activeSemester) {
+      activeSemester = await Semester.findOne({ is_active: true });
+    }
     if (!activeSemester) return res.json({ stage: 'unavailable' });
 
     const now = new Date();

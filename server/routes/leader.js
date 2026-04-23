@@ -153,9 +153,12 @@ router.get('/semester/:id', async (req, res) => {
 // GET /api/leader/semester/active/current
 router.get('/semester/active/current', async (req, res) => {
   try {
-    const semester = await Semester.findOne({ 
-      is_active: true 
-    });
+    const department_id = req.user.department_id;
+    // First try department-specific semester, then fall back to global
+    let semester = await Semester.findOne({ department_id, is_active: true });
+    if (!semester) {
+      semester = await Semester.findOne({ is_active: true });
+    }
     if (!semester) return res.status(404).json({ message: 'No active semester' });
 
     const stats = await getCalendarStats(semester._id, semester.total_students);
@@ -293,10 +296,9 @@ router.post('/students/add', async (req, res) => {
       notes
     });
 
-    // Create profile for active semester
-    const activeSemester = await Semester.findOne({ 
-      department_id, is_active: true 
-    });
+    // Create profile for active semester (department-specific or global)
+    const activeSemester = await Semester.findOne({ department_id, is_active: true }) 
+      || await Semester.findOne({ is_active: true });
     if (activeSemester) {
       await StudentProfile.create({
         user_id: student._id,
@@ -347,7 +349,7 @@ router.post('/students/bulk-import', async (req, res) => {
           isNew = true;
         }
 
-        const activeSemester = await Semester.findOne({ is_active: true });
+        const activeSemester = await Semester.findOne({ department_id, is_active: true }) || await Semester.findOne({ is_active: true });
         if (activeSemester) {
           const profileExists = await StudentProfile.findOne({
             user_id: student._id,
@@ -376,7 +378,7 @@ router.post('/students/bulk-import', async (req, res) => {
     }
 
     // Update semester student count
-    const activeSemester = await Semester.findOne({ is_active: true });
+    const activeSemester = await Semester.findOne({ department_id, is_active: true }) || await Semester.findOne({ is_active: true });
     if (activeSemester) {
       const activeStudentsGlobal = await User.countDocuments({ role: 'student', is_active: true });
       activeSemester.total_students = activeStudentsGlobal;
@@ -505,7 +507,11 @@ async function buildLeaderDashboard(department_id, semesterId) {
 router.get('/dashboard', async (req, res) => {
   try {
     const department_id = req.user.department_id;
-    const semester = await Semester.findOne({ is_active: true });
+    // First try department-specific semester, then fall back to global
+    let semester = await Semester.findOne({ department_id, is_active: true });
+    if (!semester) {
+      semester = await Semester.findOne({ is_active: true });
+    }
     if (!semester) return res.status(404).json({ message: 'No active semester' });
 
     const payload = await buildLeaderDashboard(department_id, semester._id);
